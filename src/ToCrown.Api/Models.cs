@@ -128,3 +128,4 @@ public sealed class RequestItem
 public sealed record LoginRequest(string Email, string Password);
 public sealed record LoginResponse(string Token, User User, Player? Player);
 public sealed record PlayerPayload(User User, Player Player);
+public sealed record WalletGenerationRequest(string Month, decimal DefaultAmount, List<string> ExcludedPlayerIds, Dictionary<string, decimal> Overrides);

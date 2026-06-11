@@ -2,7 +2,14 @@ using System.Text.Json;
 
 namespace ToCrown.Api;
 
-public sealed class DataStore
+public interface IAppStore
+{
+    AppDb Load();
+    void Save(AppDb db);
+    void Mutate(Action<AppDb> change);
+}
+
+public sealed class DataStore : IAppStore
 {
     private readonly string _path;
     private readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
@@ -16,6 +23,7 @@ public sealed class DataStore
             : configured;
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         if (!File.Exists(_path)) Save(Seed());
+        EnsureBaselineUsers();
     }
 
     public AppDb Load()
@@ -45,8 +53,33 @@ public sealed class DataStore
         }
     }
 
+    private void EnsureBaselineUsers()
+    {
+        var db = Load();
+        var changed = false;
+        changed |= EnsureUser(db, "superadmin@tocrown.com", "superadmin", "Super Administrador");
+        changed |= EnsureUser(db, "admin@tocrown.com", "admin", "Administrador ToCrown");
+        if (changed) Save(db);
+    }
+
+    private static bool EnsureUser(AppDb db, string email, string role, string name)
+    {
+        var user = db.Users.FirstOrDefault(item => item.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        if (user is null)
+        {
+            db.Users.Add(new User { Id = Guid.NewGuid().ToString("N"), Role = role, Name = name, Email = email, Password = "qwerty12345", Enabled = true });
+            return true;
+        }
+        user.Role = role;
+        user.Name = name;
+        user.Password = "qwerty12345";
+        user.Enabled = true;
+        return true;
+    }
+
     private static AppDb Seed()
     {
+        var superAdmin = Guid.NewGuid().ToString("N");
         var admin = Guid.NewGuid().ToString("N");
         var u1 = Guid.NewGuid().ToString("N");
         var u2 = Guid.NewGuid().ToString("N");
@@ -57,7 +90,8 @@ public sealed class DataStore
         {
             Users =
             [
-                new User { Id = admin, Role = "admin", Name = "Admin General", Email = "admin@tocrown.com", Password = "Admin123", Enabled = true },
+                new User { Id = superAdmin, Role = "superadmin", Name = "Super Administrador", Email = "superadmin@tocrown.com", Password = "qwerty12345", Enabled = true },
+                new User { Id = admin, Role = "admin", Name = "Administrador ToCrown", Email = "admin@tocrown.com", Password = "qwerty12345", Enabled = true },
                 new User { Id = u1, Role = "player", Name = "Valentina Rojas", Email = "vale@tocrown.com", Password = "Vale123", Enabled = true },
                 new User { Id = u2, Role = "player", Name = "Camila Torres", Email = "cami@tocrown.com", Password = "Cami123", Enabled = true }
             ],

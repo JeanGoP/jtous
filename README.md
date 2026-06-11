@@ -16,8 +16,28 @@ http://localhost:5000
 
 Credenciales iniciales:
 
-- Admin: `admin@tocrown.com` / `Admin123`
-- Jugadora: `vale@tocrown.com` / `Vale123`
+- Super administrador: `superadmin@tocrown.com` / `qwerty12345`
+- Administrador: `admin@tocrown.com` / `qwerty12345`
+
+## SQL Server
+
+Ejecuta el script:
+
+```text
+sql/001_create_tocrown.sql
+```
+
+Luego configura una de estas variables de entorno:
+
+```text
+ConnectionStrings__ToCrownDb=Server=TU_SERVIDOR;Database=ToCrownDb;User Id=TU_USUARIO;Password=TU_PASSWORD;TrustServerCertificate=True;
+```
+
+o:
+
+```text
+SQLSERVER_CONNECTION_STRING=Server=TU_SERVIDOR;Database=ToCrownDb;User Id=TU_USUARIO;Password=TU_PASSWORD;TrustServerCertificate=True;
+```
 
 ## Render
 

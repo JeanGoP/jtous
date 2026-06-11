@@ -4,6 +4,16 @@ using ToCrown.Api;
 var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+builder.Services.AddSingleton<IAppStore>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var sqlConnection =
+        configuration.GetConnectionString("ToCrownDb") ??
+        Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING");
+    return string.IsNullOrWhiteSpace(sqlConnection)
+        ? sp.GetRequiredService<DataStore>()
+        : new SqlDataStore(configuration);
+});
 builder.Services.AddSingleton<DataStore>();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin()));
 
@@ -14,19 +24,20 @@ app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-User? Current(HttpRequest request, DataStore store)
+User? Current(HttpRequest request, IAppStore store)
 {
     var header = request.Headers.Authorization.ToString();
     var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..] : "";
     return tokens.TryGetValue(token, out var userId) ? store.Load().Users.FirstOrDefault(user => user.Id == userId && user.Enabled) : null;
 }
 
-bool IsAdmin(HttpRequest request, DataStore store)
+bool IsAdmin(HttpRequest request, IAppStore store)
 {
-    return Current(request, store)?.Role == "admin";
+    var role = Current(request, store)?.Role;
+    return role is "admin" or "superadmin";
 }
 
-app.MapPost("/api/auth/login", (LoginRequest login, DataStore store) =>
+app.MapPost("/api/auth/login", (LoginRequest login, IAppStore store) =>
 {
     var db = store.Load();
     var user = db.Users.FirstOrDefault(item =>
@@ -42,7 +53,7 @@ app.MapPost("/api/auth/login", (LoginRequest login, DataStore store) =>
     return Results.Ok(new LoginResponse(token, user, player));
 });
 
-app.MapGet("/api/me", (HttpRequest request, DataStore store) =>
+app.MapGet("/api/me", (HttpRequest request, IAppStore store) =>
 {
     var user = Current(request, store);
     if (user is null) return Results.Unauthorized();
@@ -50,13 +61,13 @@ app.MapGet("/api/me", (HttpRequest request, DataStore store) =>
     return Results.Ok(new { user, player = db.Players.FirstOrDefault(player => player.UserId == user.Id) });
 });
 
-app.MapGet("/api/admin/snapshot", (HttpRequest request, DataStore store) =>
+app.MapGet("/api/admin/snapshot", (HttpRequest request, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     return Results.Ok(store.Load());
 });
 
-app.MapGet("/api/player/snapshot", (HttpRequest request, DataStore store) =>
+app.MapGet("/api/player/snapshot", (HttpRequest request, IAppStore store) =>
 {
     var user = Current(request, store);
     if (user is null || user.Role != "player") return Results.Unauthorized();
@@ -79,14 +90,14 @@ app.MapGet("/api/player/snapshot", (HttpRequest request, DataStore store) =>
     });
 });
 
-app.MapPost("/api/admin/players", (HttpRequest request, PlayerPayload payload, DataStore store) =>
+app.MapPost("/api/admin/players", (HttpRequest request, PlayerPayload payload, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     UpsertPlayer(payload, store, allowAccessChange: true);
     return Results.Ok(store.Load());
 });
 
-app.MapPut("/api/player/profile", (HttpRequest request, PlayerPayload payload, DataStore store) =>
+app.MapPut("/api/player/profile", (HttpRequest request, PlayerPayload payload, IAppStore store) =>
 {
     var user = Current(request, store);
     if (user is null || user.Role != "player" || payload.User.Id != user.Id) return Results.Unauthorized();
@@ -94,7 +105,7 @@ app.MapPut("/api/player/profile", (HttpRequest request, PlayerPayload payload, D
     return Results.Ok(store.Load().Players.First(player => player.UserId == user.Id));
 });
 
-app.MapPost("/api/admin/championships", (HttpRequest request, Championship championship, DataStore store) =>
+app.MapPost("/api/admin/championships", (HttpRequest request, Championship championship, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     if (string.IsNullOrWhiteSpace(championship.Id)) championship.Id = Guid.NewGuid().ToString("N");
@@ -103,7 +114,7 @@ app.MapPost("/api/admin/championships", (HttpRequest request, Championship champ
     return Results.Ok(store.Load());
 });
 
-app.MapPost("/api/admin/payments", (HttpRequest request, Payment payment, DataStore store) =>
+app.MapPost("/api/admin/payments", (HttpRequest request, Payment payment, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     if (string.IsNullOrWhiteSpace(payment.Id)) payment.Id = Guid.NewGuid().ToString("N");
@@ -111,7 +122,36 @@ app.MapPost("/api/admin/payments", (HttpRequest request, Payment payment, DataSt
     return Results.Ok(store.Load());
 });
 
-app.MapPost("/api/requests", (HttpRequest request, RequestItem item, DataStore store) =>
+app.MapPost("/api/admin/wallet/generate", (HttpRequest request, WalletGenerationRequest generation, IAppStore store) =>
+{
+    if (!IsAdmin(request, store)) return Results.Unauthorized();
+    store.Mutate(db =>
+    {
+        var excluded = generation.ExcludedPlayerIds.ToHashSet();
+        foreach (var player in db.Players.Where(player => player.Status != "Inactiva" && !excluded.Contains(player.Id)))
+        {
+            if (db.Payments.Any(payment => payment.PlayerId == player.Id && payment.Month == generation.Month)) continue;
+            var amount = generation.Overrides.TryGetValue(player.Id, out var customAmount)
+                ? customAmount
+                : generation.DefaultAmount;
+            db.Payments.Add(new Payment
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                PlayerId = player.Id,
+                Month = generation.Month,
+                Amount = amount,
+                Paid = 0,
+                Date = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd"),
+                Confirmed = false,
+                Method = "Pendiente",
+                Note = "Cartera generada mensual"
+            });
+        }
+    });
+    return Results.Ok(store.Load());
+});
+
+app.MapPost("/api/requests", (HttpRequest request, RequestItem item, IAppStore store) =>
 {
     var user = Current(request, store);
     if (user is null) return Results.Unauthorized();
@@ -130,7 +170,7 @@ app.MapPost("/api/requests", (HttpRequest request, RequestItem item, DataStore s
     return Results.Ok(store.Load());
 });
 
-app.MapPut("/api/admin/users/{id}/toggle", (HttpRequest request, string id, DataStore store) =>
+app.MapPut("/api/admin/users/{id}/toggle", (HttpRequest request, string id, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     store.Mutate(db =>
@@ -141,7 +181,7 @@ app.MapPut("/api/admin/users/{id}/toggle", (HttpRequest request, string id, Data
     return Results.Ok(store.Load());
 });
 
-app.MapGet("/api/admin/export", (HttpRequest request, DataStore store) =>
+app.MapGet("/api/admin/export", (HttpRequest request, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     return Results.Json(store.Load());
@@ -150,7 +190,7 @@ app.MapGet("/api/admin/export", (HttpRequest request, DataStore store) =>
 app.MapFallbackToFile("index.html");
 app.Run();
 
-static void UpsertPlayer(PlayerPayload payload, DataStore store, bool allowAccessChange)
+static void UpsertPlayer(PlayerPayload payload, IAppStore store, bool allowAccessChange)
 {
     store.Mutate(db =>
     {

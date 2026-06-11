@@ -39,6 +39,6 @@ const Api = {
   },
 
   snapshot() {
-    return this.request(this.user?.role === "admin" ? "/api/admin/snapshot" : "/api/player/snapshot");
+    return this.request(["admin", "superadmin"].includes(this.user?.role) ? "/api/admin/snapshot" : "/api/player/snapshot");
   }
 };
