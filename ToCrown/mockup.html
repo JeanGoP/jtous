@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToCrown - Club Deportivo de Voleibol</title>
+  <style>
+    /* ── Variables de color ── */
+    :root {
+      --green-dark:   #0b4d22;
+      --green-mid:    #1a7a3c;
+      --green-light:  #2eaa55;
+      --gold:         #e8b800;
+      --gold-light:   #f5d040;
+      --gold-dark:    #b38900;
+      --white:        #ffffff;
+      --gray-100:     #f4f6f4;
+      --gray-200:     #e0e6e0;
+      --gray-500:     #7a8c7a;
+      --gray-800:     #1e2a1e;
+      --shadow-card:  0 4px 24px rgba(0,0,0,0.13);
+      --radius:       14px;
+      --radius-sm:    8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-800);
+    }
+
+    /* ── Navegación de secciones del mockup ── */
+    .nav-mockup {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: #111;
+      display: flex; gap: 4px; padding: 8px 16px;
+      overflow-x: auto;
+    }
+    .nav-mockup button {
+      background: #333; color: #eee; border: none; padding: 6px 14px;
+      border-radius: 20px; cursor: pointer; font-size: 12px; white-space: nowrap;
+      transition: background .2s;
+    }
+    .nav-mockup button.active, .nav-mockup button:hover {
+      background: var(--gold); color: #111;
+    }
+
+    /* ── Pantallas ── */
+    .screen { display: none; min-height: 100vh; padding-top: 44px; }
+    .screen.active { display: block; }
+
+    /* ════════════════════════════════
+       PANTALLA 1 — LOGIN
+    ════════════════════════════════ */
+    #screen-login {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 50%, var(--green-dark) 100%);
+      display: none; align-items: center; justify-content: center;
+      min-height: 100vh; position: relative; overflow: hidden;
+    }
+    #screen-login.active { display: flex; }
+
+    /* Hexágonos decorativos */
+    .hex-bg {
+      position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+    }
+    .hex {
+      position: absolute; width: 90px; height: 104px; opacity: .06;
+      background: var(--gold);
+      clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    }
+    .hex:nth-child(1)  { top: -20px;  left: -30px; width:140px; height:161px; }
+    .hex:nth-child(2)  { top: 60px;   left: 80px;  }
+    .hex:nth-child(3)  { top: 200px;  left: -40px; width:120px; height:138px; }
+    .hex:nth-child(4)  { bottom: 80px; left: 20px; width:160px; height:184px; }
+    .hex:nth-child(5)  { top: -30px;  right: 40px; width:180px; height:207px; }
+    .hex:nth-child(6)  { top: 150px;  right: -20px;}
+    .hex:nth-child(7)  { bottom: 20px; right: 60px; width:120px; height:138px; }
+    .hex:nth-child(8)  { bottom: 180px;right: 160px; }
+
+    .login-card {
+      background: rgba(255,255,255,.97);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      padding: 48px 42px 40px;
+      width: 100%; max-width: 420px;
+      position: relative; z-index: 1;
+      text-align: center;
+    }
+    .login-logo { width: 110px; margin-bottom: 8px; }
+    .login-card h1 {
+      font-size: 22px; font-weight: 800; color: var(--green-dark);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
+    }
+    .login-card .subtitle {
+      font-size: 11px; color: var(--gray-500); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 32px;
+    }
+    .form-group { margin-bottom: 18px; text-align: left; }
+    .form-group label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--green-dark); text-transform: uppercase;
+      letter-spacing: .8px; margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%; padding: 12px 16px; border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm); font-size: 14px;
+      transition: border-color .2s;
+      background: var(--gray-100);
+    }
+    .form-group input:focus {
+      outline: none; border-color: var(--green-mid);
+      background: white;
+    }
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
+      color: white; border: none; border-radius: var(--radius-sm);
+      font-size: 15px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(11,77,34,.35);
+      transition: transform .15s, box-shadow .15s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(11,77,34,.4);
+    }
+    .login-footer {
+      margin-top: 24px; font-size: 12px; color: var(--gray-500);
+    }
+    .login-footer a { color: var(--green-mid); text-decoration: none; font-weight: 600; }
+
+    /* ════════════════════════════════
+       LAYOUT PRINCIPAL (sidebar + content)
+    ════════════════════════════════ */
+    .app-layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: var(--green-dark);
+      display: flex; flex-direction: column;
+      position: fixed; top: 44px; bottom: 0; left: 0;
+      overflow-y: auto; z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-logo img { width: 52px; }
+    .sidebar-logo-text .club-name {
+      font-size: 16px; font-weight: 800; color: var(--gold);
+      letter-spacing: 2px; text-transform: uppercase; line-height: 1;
+    }
+    .sidebar-logo-text .club-sub {
+      font-size: 9px; color: rgba(255,255,255,.5); letter-spacing: .5px; margin-top: 2px;
+    }
+    .sidebar-user {
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: var(--green-dark);
+      flex-shrink: 0;
+    }
+    .avatar-lg {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 800; color: var(--green-dark);
+      border: 3px solid var(--gold-light);
+    }
+    .sidebar-user-info .name {
+      font-size: 13px; font-weight: 700; color: white;
+    }
+    .sidebar-user-info .role {
+      font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: .5px;
+    }
+    .sidebar-nav { padding: 12px 0; flex: 1; }
+    .nav-section-title {
+      font-size: 10px; color: rgba(255,255,255,.35); letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 12px 20px 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 20px; cursor: pointer;
+      color: rgba(255,255,255,.7); font-size: 14px;
+      transition: background .15s, color .15s;
+      border-left: 3px solid transparent;
+      text-decoration: none;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: rgba(255,255,255,.07);
+      color: white; border-left-color: var(--gold);
+    }
+    .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+    .sidebar-bottom {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .btn-logout {
+      width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,.2);
+      background: transparent; color: rgba(255,255,255,.7);
+      border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;
+      transition: all .2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.1); color: white; }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: fixed; top: 44px; left: 260px; right: 0;
+      height: 64px; background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; z-index: 99;
+    }
+    .topbar-title { font-size: 20px; font-weight: 800; color: var(--green-dark); }
+    .topbar-actions { display: flex; align-items: center; gap: 16px; }
+    .badge-notif {
+      width: 36px; height: 36px; background: var(--gray-100);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer; position: relative;
+    }
+    .badge-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 8px; height: 8px; background: var(--gold);
+      border-radius: 50%; border: 2px solid white;
+    }
+
+    /* ── Main content ── */
+    .main-content { margin-left: 260px; padding-top: 64px; min-height: 100vh; }
+    .page-body { padding: 28px; }
+
+    /* ── Estadísticas ── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: white; border-radius: var(--radius);
+      padding: 20px 22px; box-shadow: var(--shadow-card);
+      display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+    }
+    .stat-icon.green  { background: rgba(26,122,60,.12); }
+    .stat-icon.gold   { background: rgba(232,184,0,.15); }
+    .stat-icon.blue   { background: rgba(30,100,200,.1); }
+    .stat-icon.purple { background: rgba(120,60,200,.1); }
+    .stat-label { font-size: 12px; color: var(--gray-500); text-transform: uppercase; letter-spacing: .6px; }
+    .stat-value { font-size: 28px; font-weight: 800; color: var(--green-dark); line-height: 1; }
+    .stat-sub   { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+    /* ── Sección doble ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+    /* ── Card base ── */
+    .card {
+      background: white; border-radius: var(--radius);
+      box-shadow: var(--shadow-card); overflow: hidden;
+    }
+    .card-header {
+      padding: 18px 22px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .card-title {
+      font-size: 15px; font-weight: 700; color: var(--green-dark);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 20px 22px; }
+
+    /* ── Tabla ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 10px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: .8px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    tbody tr { border-bottom: 1px solid var(--gray-200); transition: background .1s; }
+    tbody tr:hover { background: var(--gray-100); }
+    tbody td { padding: 12px 14px; font-size: 14px; }
+    .pill {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .pill-green  { background: rgba(26,122,60,.12); color: var(--green-mid); }
+    .pill-gold   { background: rgba(232,184,0,.18); color: var(--gold-dark); }
+    .pill-gray   { background: var(--gray-200);      color: var(--gray-500); }
+    .pill-red    { background: rgba(200,40,40,.1);    color: #c82828; }
+
+    /* ── Botón mini ── */
+    .btn-sm {
+      padding: 6px 14px; border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      border: none; transition: all .15s;
+    }
+    .btn-sm.green { background: var(--green-mid); color: white; }
+    .btn-sm.green:hover { background: var(--green-dark); }
+    .btn-sm.gold  { background: var(--gold); color: var(--green-dark); }
+    .btn-sm.gold:hover  { background: var(--gold-light); }
+    .btn-sm.outline {
+      background: transparent; color: var(--green-mid);
+      border: 1.5px solid var(--green-mid);
+    }
+    .btn-sm.outline:hover { background: var(--green-mid); color: white; }
+
+    /* ── Campeonatos banner ── */
+    .champ-card {
+      border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow-card);
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+      padding: 20px 22px; color: white;
+      position: relative;
+    }
+    .champ-card::after {
+      content: '🏆';
+      position: absolute; right: 20px; top: 50%;
+      transform: translateY(-50%); font-size: 52px; opacity: .15;
+    }
+    .champ-card .label { font-size: 11px; opacity: .7; letter-spacing: 1px; text-transform: uppercase; }
+    .champ-card .name  { font-size: 18px; font-weight: 800; margin: 4px 0 8px; }
+    .champ-card .meta  { display: flex; gap: 16px; font-size: 12px; opacity: .8; }
+    .champ-card .meta span { display: flex; align-items: center; gap: 4px; }
+
+    /* ── Formulario registro ── */
+    .form-section-title {
+      font-size: 13px; font-weight: 700; color: var(--green-mid);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 0 0 10px; margin-bottom: 16px;
+      border-bottom: 2px solid var(--gold);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .form-grid .full, .form-grid-3 .full { grid-column: 1 / -1; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--gray-500); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm); font-size: 14px; background: var(--gray-100);
+      transition: border-color .2s; font-family: inherit;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--green-mid); background: white;
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .check-group { display: flex; flex-wrap: wrap; gap: 10px; }
+    .check-item {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--gray-100); padding: 6px 12px;
+      border-radius: 20px; font-size: 13px; cursor: pointer;
+    }
+    .check-item input { width: auto; }
+
+    /* ── Perfil player ── */
+    .profile-header {
+      background: linear-gradient(135deg, var(--green-dark), var(--green-mid));
+      padding: 28px; border-radius: var(--radius) var(--radius) 0 0;
+      display: flex; align-items: center; gap: 20px; color: white;
+    }
+    .profile-name { font-size: 22px; font-weight: 800; }
+    .profile-sub  { font-size: 13px; opacity: .75; margin-top: 2px; }
+    .profile-number {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--gold); color: var(--green-dark);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 900; flex-shrink: 0;
+    }
+
+    /* ── Info block ── */
+    .info-block { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .info-item label {
+      font-size: 10px; font-weight: 700; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: .7px; display: block; margin-bottom: 3px;
+    }
+    .info-item span { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+
+    /* ── Tallas ── */
+    .tallas-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .talla-box {
+      text-align: center; background: var(--gray-100);
+      border-radius: var(--radius-sm); padding: 14px 8px;
+      border: 2px solid transparent;
+    }
+    .talla-box .t-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .talla-box .t-value { font-size: 22px; font-weight: 900; color: var(--green-dark); }
+    .talla-box.active { border-color: var(--gold); background: rgba(232,184,0,.08); }
+
+    /* ── Calendario mini ── */
+    .mini-calendar .month-title {
+      font-weight: 700; font-size: 15px; color: var(--green-dark); margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .cal-grid .day-name { font-size: 10px; color: var(--gray-500); font-weight: 700; padding: 4px 0; }
+    .cal-day {
+      font-size: 13px; padding: 6px 2px; border-radius: 6px; cursor: pointer;
+      transition: background .1s;
+    }
+    .cal-day:hover { background: var(--gray-200); }
+    .cal-day.today { background: var(--green-dark); color: white; font-weight: 700; }
+    .cal-day.event { color: var(--gold-dark); font-weight: 700; }
+    .cal-day.event::after { content: '•'; display: block; font-size: 8px; color: var(--gold); margin-top: -4px; }
+    .cal-day.empty { color: transparent; pointer-events: none; }
+
+    /* ── Notificación ── */
+    .notif {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid var(--gray-200);
+    }
+    .notif:last-child { border-bottom: none; }
+    .notif-icon {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .notif-icon.green { background: rgba(26,122,60,.12); }
+    .notif-icon.gold  { background: rgba(232,184,0,.15); }
+    .notif-text .title { font-size: 13px; font-weight: 700; color: var(--gray-800); }
+    .notif-text .desc  { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+    .notif-time { font-size: 11px; color: var(--gray-500); margin-left: auto; white-space: nowrap; }
+
+    /* ── Progress bar ── */
+    .prog-bar {
+      height: 6px; background: var(--gray-200); border-radius: 4px; overflow: hidden; margin-top: 8px;
+    }
+    .prog-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green-mid), var(--gold)); }
+
+    /* ════════════════════════════════
+       RESPONSIVE label screens
+    ════════════════════════════════ */
+    .screen-label {
+      background: var(--gold); color: var(--green-dark);
+      font-size: 11px; font-weight: 800; letter-spacing: 1px;
+      text-transform: uppercase; padding: 4px 12px;
+      display: inline-block; border-radius: 0 0 8px 0;
+      position: absolute; top: 44px; left: 0; z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Barra de navegación del mockup ── -->
+<nav class="nav-mockup">
+  <button class="active" onclick="show('login')">1. Login</button>
+  <button onclick="show('dashboard')">2. Dashboard (Admin)</button>
+  <button onclick="show('jugadoras')">3. Lista Jugadoras</button>
+  <button onclick="show('registro')">4. Registro / Edición</button>
+  <button onclick="show('perfil')">5. Mi Perfil (Jugadora)</button>
+  <button onclick="show('campeonatos')">6. Campeonatos</button>
+</nav>
+
+<!-- ══════════════════════════════
+     PANTALLA 1 — LOGIN
+══════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="hex-bg">
+    <div class="hex"></div><div class="hex"></div><div class="hex"></div>
+    <div class="hex"></div><div class="hex"></div><div class="hex"></div>
+    <div class="hex"></div><div class="hex"></div>
+  </div>
+
+  <div class="login-card">
+    <!-- Logo como SVG inline estilizado (placeholder con colores del club) -->
+    <div style="margin-bottom:12px;">
+      <svg width="90" height="90" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Corona -->
+        <path d="M28 28 L36 10 L50 22 L64 10 L72 28 Z" fill="#e8b800" stroke="#b38900" stroke-width="1.5"/>
+        <rect x="26" y="26" width="48" height="6" rx="2" fill="#e8b800" stroke="#b38900" stroke-width="1"/>
+        <!-- Escudo -->
+        <path d="M15 40 L15 75 Q15 95 50 105 Q85 95 85 75 L85 40 Z" fill="#0b4d22" stroke="#e8b800" stroke-width="2.5"/>
+        <path d="M22 44 L22 74 Q22 90 50 100 Q78 90 78 74 L78 44 Z" fill="#1a7a3c"/>
+        <!-- Pelota de voleibol estilizada -->
+        <circle cx="50" cy="72" r="18" fill="white" stroke="#e8e8e8" stroke-width="1"/>
+        <path d="M35 68 Q42 58 50 68 Q58 78 65 68" stroke="#0b4d22" stroke-width="2" fill="none"/>
+        <path d="M35 76 Q42 86 50 76 Q58 66 65 76" stroke="#e8b800" stroke-width="2" fill="none"/>
+        <path d="M50 54 L50 90" stroke="#2eaa55" stroke-width="2"/>
+        <!-- CDVT text en pelota -->
+        <text x="50" y="76" text-anchor="middle" font-size="6" font-weight="800" fill="#0b4d22" font-family="sans-serif">C.D.V.T</text>
+      </svg>
+    </div>
+
+    <h1>To Crown</h1>
+    <p class="subtitle">Club Deportivo de Voleibol</p>
+
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" placeholder="tucorreo@email.com" value="maria@tocrown.com" />
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" placeholder="••••••••" value="••••••••" />
+    </div>
+
+    <button class="btn-primary" onclick="show('dashboard')">Ingresar al Sistema →</button>
+
+    <p style="font-size:11px; color:var(--gray-500); margin-top:12px;">
+      ¿Olvidaste tu contraseña? <a href="#" style="color:var(--green-mid);font-weight:700;">Recupérala aquí</a>
+    </p>
+
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--gray-200);">
+      <p style="font-size:11px; color:var(--gray-500); margin-bottom:10px;">Acceso rápido de demostración:</p>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <button class="btn-sm gold" onclick="show('dashboard')">👑 Admin</button>
+        <button class="btn-sm outline" onclick="show('perfil')">🏐 Jugadora</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PANTALLA 2 — DASHBOARD ADMIN
+══════════════════════════════ -->
+<div id="screen-dashboard" class="screen">
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="52" height="52" viewBox="0 0 100 110" fill="none">
+          <path d="M28 28 L36 10 L50 22 L64 10 L72 28 Z" fill="#e8b800"/>
+          <rect x="26" y="26" width="48" height="6" rx="2" fill="#e8b800"/>
+          <path d="M15 40 L15 75 Q15 95 50 105 Q85 95 85 75 L85 40 Z" fill="#0b4d22" stroke="#e8b800" stroke-width="2"/>
+          <path d="M22 44 L22 74 Q22 90 50 100 Q78 90 78 44 Z" fill="#1a7a3c"/>
+          <circle cx="50" cy="72" r="15" fill="white" opacity=".9"/>
+          <text x="50" y="76" text-anchor="middle" font-size="6" font-weight="800" fill="#0b4d22" font-family="sans-serif">CDVT</text>
+        </svg>
+        <div class="sidebar-logo-text">
+          <div class="club-name">To Crown</div>
+          <div class="club-sub">Club de Voleibol</div>
+        </div>
+      </div>
+      <div class="sidebar-user">
+        <div class="avatar">A</div>
+        <div class="sidebar-user-info">
+          <div class="name">Admin General</div>
+          <div class="role">Administrador</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item active" onclick="show('dashboard')">
+          <span class="icon">📊</span> Dashboard
+        </a>
+        <a class="nav-item" onclick="show('jugadoras')">
+          <span class="icon">👥</span> Jugadoras
+        </a>
+        <a class="nav-item" onclick="show('campeonatos')">
+          <span class="icon">🏆</span> Campeonatos
+        </a>
+        <div class="nav-section-title">Gestión</div>
+        <a class="nav-item" onclick="show('registro')">
+          <span class="icon">➕</span> Registrar Jugadora
+        </a>
+        <a class="nav-item">
+          <span class="icon">👕</span> Uniformes & Tallas
+        </a>
+        <a class="nav-item">
+          <span class="icon">📅</span> Calendario
+        </a>
+        <a class="nav-item">
+          <span class="icon">📢</span> Notificaciones
+        </a>
+        <div class="nav-section-title">Sistema</div>
+        <a class="nav-item"><span class="icon">⚙️</span> Configuración</a>
+        <a class="nav-item"><span class="icon">👤</span> Usuarios</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="btn-logout" onclick="show('login')">⬅ Cerrar Sesión</button>
+      </div>
+    </aside>
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <div class="badge-notif">🔔<div class="badge-dot"></div></div>
+        <button class="btn-sm gold" onclick="show('registro')">+ Nueva Jugadora</button>
+      </div>
+    </div>
+
+    <!-- Contenido -->
+    <main class="main-content">
+      <div class="page-body">
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon green">👥</div>
+            <div>
+              <div class="stat-label">Jugadoras</div>
+              <div class="stat-value">24</div>
+              <div class="stat-sub">+2 este mes</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon gold">🏆</div>
+            <div>
+              <div class="stat-label">Campeonatos</div>
+              <div class="stat-value">3</div>
+              <div class="stat-sub">2 activos</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">👕</div>
+            <div>
+              <div class="stat-label">Uniformes</div>
+              <div class="stat-value">22</div>
+              <div class="stat-sub">2 pendientes</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">🏅</div>
+            <div>
+              <div class="stat-label">Inscritas</div>
+              <div class="stat-value">18</div>
+              <div class="stat-sub">Liga Nacional 2025</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campeonatos activos + Notificaciones -->
+        <div class="two-col">
+          <!-- Campeonatos -->
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--green-dark);margin-bottom:12px;">🏆 Campeonatos Activos</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="champ-card">
+                <div class="label">Liga Departamental</div>
+                <div class="name">Copa Gobernación 2025</div>
+                <div class="meta">
+                  <span>📅 14 Jun 2025</span>
+                  <span>📍 Coliseo Central</span>
+                  <span>👥 18 inscritas</span>
+                </div>
+              </div>
+              <div class="champ-card" style="background:linear-gradient(135deg,#1a3a6b,#2d5aa0);">
+                <div class="label">Torneo Nacional</div>
+                <div class="name">Campeonato Nacional Sub-23</div>
+                <div class="meta">
+                  <span>📅 28 Jul 2025</span>
+                  <span>📍 Bogotá D.C.</span>
+                  <span>👥 12 inscritas</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notificaciones -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🔔 Actividad Reciente</div>
+              <button class="btn-sm outline">Ver todas</button>
+            </div>
+            <div class="card-body" style="padding:12px 20px;">
+              <div class="notif">
+                <div class="notif-icon green">👤</div>
+                <div class="notif-text">
+                  <div class="title">Nueva jugadora registrada</div>
+                  <div class="desc">Valentina Torres completó su registro</div>
+                </div>
+                <div class="notif-time">Hace 2h</div>
+              </div>
+              <div class="notif">
+                <div class="notif-icon gold">🏆</div>
+                <div class="notif-text">
+                  <div class="title">Inscripción confirmada</div>
+                  <div class="desc">Copa Gobernación — 3 jugadoras inscritas</div>
+                </div>
+                <div class="notif-time">Hace 5h</div>
+              </div>
+              <div class="notif">
+                <div class="notif-icon green">👕</div>
+                <div class="notif-text">
+                  <div class="title">Solicitud de uniforme</div>
+                  <div class="desc">Mariana López actualizó su talla</div>
+                </div>
+                <div class="notif-time">Ayer</div>
+              </div>
+              <div class="notif">
+                <div class="notif-icon gold">📅</div>
+                <div class="notif-text">
+                  <div class="title">Entrenamiento programado</div>
+                  <div class="desc">Martes 17 Jun — 6:00 PM</div>
+                </div>
+                <div class="notif-time">Ayer</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla rápida + calendario -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">👥 Jugadoras Recientes</div>
+              <button class="btn-sm green" onclick="show('jugadoras')">Ver todas</button>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Posición</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:30px;height:30px;font-size:12px;">V</div>Valentina Torres</div></td>
+                    <td>Líbero</td>
+                    <td><span class="pill pill-green">Activa</span></td>
+                  </tr>
+                  <tr>
+                    <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:30px;height:30px;font-size:12px;">M</div>Mariana López</div></td>
+                    <td>Armadora</td>
+                    <td><span class="pill pill-green">Activa</span></td>
+                  </tr>
+                  <tr>
+                    <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:30px;height:30px;font-size:12px;">S</div>Sara Medina</div></td>
+                    <td>Central</td>
+                    <td><span class="pill pill-gold">Inactiva</span></td>
+                  </tr>
+                  <tr>
+                    <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:30px;height:30px;font-size:12px;">L</div>Laura García</div></td>
+                    <td>Opuesta</td>
+                    <td><span class="pill pill-green">Activa</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mini calendario -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📅 Junio 2025</div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn-sm outline">‹</button>
+                <button class="btn-sm outline">›</button>
+              </div>
+            </div>
+            <div class="card-body mini-calendar">
+              <div class="cal-grid">
+                <div class="day-name">Do</div><div class="day-name">Lu</div>
+                <div class="day-name">Ma</div><div class="day-name">Mi</div>
+                <div class="day-name">Ju</div><div class="day-name">Vi</div>
+                <div class="day-name">Sa</div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day empty"></div>
+                <div class="cal-day">1</div>
+                <div class="cal-day">2</div><div class="cal-day">3</div>
+                <div class="cal-day event">4</div><div class="cal-day">5</div>
+                <div class="cal-day">6</div><div class="cal-day event">7</div>
+                <div class="cal-day">8</div>
+                <div class="cal-day">9</div><div class="cal-day event">10</div>
+                <div class="cal-day today">11</div><div class="cal-day">12</div>
+                <div class="cal-day">13</div><div class="cal-day event">14</div>
+                <div class="cal-day">15</div>
+                <div class="cal-day">16</div><div class="cal-day event">17</div>
+                <div class="cal-day">18</div><div class="cal-day">19</div>
+                <div class="cal-day">20</div><div class="cal-day">21</div>
+                <div class="cal-day">22</div>
+                <div class="cal-day">23</div><div class="cal-day">24</div>
+                <div class="cal-day">25</div><div class="cal-day">26</div>
+                <div class="cal-day event">27</div><div class="cal-day">28</div>
+                <div class="cal-day">29</div>
+                <div class="cal-day">30</div>
+              </div>
+              <div style="margin-top:16px;">
+                <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px;font-weight:700;">PRÓXIMOS EVENTOS</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+                    <div style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></div>
+                    <span style="color:var(--gray-500);">14 Jun</span> Copa Gobernación — Fase 1
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+                    <div style="width:6px;height:6px;border-radius:50%;background:var(--green-mid);flex-shrink:0;"></div>
+                    <span style="color:var(--gray-500);">17 Jun</span> Entrenamiento general
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+                    <div style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;"></div>
+                    <span style="color:var(--gray-500);">27 Jun</span> Copa Gobernación — Semifinal
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PANTALLA 3 — LISTA JUGADORAS
+══════════════════════════════ -->
+<div id="screen-jugadoras" class="screen">
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="52" height="52" viewBox="0 0 100 110" fill="none">
+          <path d="M28 28 L36 10 L50 22 L64 10 L72 28 Z" fill="#e8b800"/>
+          <rect x="26" y="26" width="48" height="6" rx="2" fill="#e8b800"/>
+          <path d="M15 40 L15 75 Q15 95 50 105 Q85 95 85 75 L85 40 Z" fill="#0b4d22" stroke="#e8b800" stroke-width="2"/>
+          <path d="M22 44 L22 74 Q22 90 50 100 Q78 90 78 44 Z" fill="#1a7a3c"/>
+          <circle cx="50" cy="72" r="15" fill="white" opacity=".9"/>
+          <text x="50" y="76" text-anchor="middle" font-size="6" font-weight="800" fill="#0b4d22" font-family="sans-serif">CDVT</text>
+        </svg>
+        <div class="sidebar-logo-text">
+          <div class="club-name">To Crown</div>
+          <div class="club-sub">Club de Voleibol</div>
+        </div>
+      </div>
+      <div class="sidebar-user"><div class="avatar">A</div><div class="sidebar-user-info"><div class="name">Admin General</div><div class="role">Administrador</div></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item" onclick="show('dashboard')"><span class="icon">📊</span> Dashboard</a>
+        <a class="nav-item active" onclick="show('jugadoras')"><span class="icon">👥</span> Jugadoras</a>
+        <a class="nav-item" onclick="show('campeonatos')"><span class="icon">🏆</span> Campeonatos</a>
+        <div class="nav-section-title">Gestión</div>
+        <a class="nav-item" onclick="show('registro')"><span class="icon">➕</span> Registrar Jugadora</a>
+        <a class="nav-item"><span class="icon">👕</span> Uniformes & Tallas</a>
+        <a class="nav-item"><span class="icon">📅</span> Calendario</a>
+      </nav>
+      <div class="sidebar-bottom"><button class="btn-logout" onclick="show('login')">⬅ Cerrar Sesión</button></div>
+    </aside>
+    <div class="topbar">
+      <div class="topbar-title">Jugadoras</div>
+      <div class="topbar-actions">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" placeholder="🔍  Buscar jugadora..." style="padding:8px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;width:220px;" />
+          <select style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;">
+            <option>Todas las posiciones</option>
+            <option>Armadora</option>
+            <option>Central</option>
+            <option>Líbero</option>
+          </select>
+        </div>
+        <button class="btn-sm gold" onclick="show('registro')">+ Nueva Jugadora</button>
+      </div>
+    </div>
+    <main class="main-content">
+      <div class="page-body">
+
+        <!-- Fichas de jugadoras en grid -->
+        <div class="three-col" style="margin-bottom:0;">
+
+          <!-- Card jugadora x6 -->
+          <div class="card" style="cursor:pointer;" onclick="show('perfil')">
+            <div style="background:linear-gradient(135deg,var(--green-dark),var(--green-mid));height:60px;position:relative;">
+              <div style="position:absolute;bottom:-28px;left:22px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--green-dark);border:3px solid white;">V</div>
+              <div style="position:absolute;top:10px;right:14px;background:rgba(0,0,0,.25);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">#7</div>
+            </div>
+            <div style="padding:36px 20px 18px;">
+              <div style="font-size:16px;font-weight:800;color:var(--green-dark);">Valentina Torres</div>
+              <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Líbero · 22 años</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span class="pill pill-green">Activa</span>
+                <span class="pill pill-gold">Copa Gob.</span>
+                <span class="pill pill-gold">Nac. Sub-23</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-sm green" style="flex:1;" onclick="show('perfil')">Ver perfil</button>
+                <button class="btn-sm outline">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="background:linear-gradient(135deg,#1a3a6b,#2d5aa0);height:60px;position:relative;">
+              <div style="position:absolute;bottom:-28px;left:22px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--green-dark);border:3px solid white;">M</div>
+              <div style="position:absolute;top:10px;right:14px;background:rgba(0,0,0,.25);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">#4</div>
+            </div>
+            <div style="padding:36px 20px 18px;">
+              <div style="font-size:16px;font-weight:800;color:var(--green-dark);">Mariana López</div>
+              <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Armadora · 20 años</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span class="pill pill-green">Activa</span>
+                <span class="pill pill-gold">Copa Gob.</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-sm green" style="flex:1;">Ver perfil</button>
+                <button class="btn-sm outline">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="background:linear-gradient(135deg,#4a1a6b,#7a2da0);height:60px;position:relative;">
+              <div style="position:absolute;bottom:-28px;left:22px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#e0e0e0,#b0b0b0);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#444;border:3px solid white;">S</div>
+              <div style="position:absolute;top:10px;right:14px;background:rgba(0,0,0,.25);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">#12</div>
+            </div>
+            <div style="padding:36px 20px 18px;">
+              <div style="font-size:16px;font-weight:800;color:var(--green-dark);">Sara Medina</div>
+              <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Central · 19 años</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span class="pill pill-gold">Inactiva</span>
+                <span style="font-size:11px;color:#c82828;background:rgba(200,40,40,.08);padding:3px 8px;border-radius:20px;font-weight:700;">⚕ Lesión</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-sm green" style="flex:1;">Ver perfil</button>
+                <button class="btn-sm outline">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="background:linear-gradient(135deg,var(--green-dark),var(--green-mid));height:60px;position:relative;">
+              <div style="position:absolute;bottom:-28px;left:22px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--green-dark);border:3px solid white;">L</div>
+              <div style="position:absolute;top:10px;right:14px;background:rgba(0,0,0,.25);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">#9</div>
+            </div>
+            <div style="padding:36px 20px 18px;">
+              <div style="font-size:16px;font-weight:800;color:var(--green-dark);">Laura García</div>
+              <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Opuesta · 24 años</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span class="pill pill-green">Activa</span>
+                <span class="pill pill-gold">Nac. Sub-23</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-sm green" style="flex:1;">Ver perfil</button>
+                <button class="btn-sm outline">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="background:linear-gradient(135deg,#6b3a1a,#a05a2d);height:60px;position:relative;">
+              <div style="position:absolute;bottom:-28px;left:22px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--green-dark);border:3px solid white;">C</div>
+              <div style="position:absolute;top:10px;right:14px;background:rgba(0,0,0,.25);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">#3</div>
+            </div>
+            <div style="padding:36px 20px 18px;">
+              <div style="font-size:16px;font-weight:800;color:var(--green-dark);">Carolina Ruiz</div>
+              <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">Receptora · 21 años</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <span class="pill pill-green">Activa</span>
+                <span class="pill pill-gold">Copa Gob.</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-sm green" style="flex:1;">Ver perfil</button>
+                <button class="btn-sm outline">Editar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card agregar -->
+          <div class="card" style="display:flex;align-items:center;justify-content:center;min-height:200px;cursor:pointer;border:2px dashed var(--gray-200);" onclick="show('registro')">
+            <div style="text-align:center;color:var(--gray-500);">
+              <div style="font-size:40px;margin-bottom:8px;">➕</div>
+              <div style="font-size:14px;font-weight:700;">Registrar nueva jugadora</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PANTALLA 4 — REGISTRO / EDICIÓN
+══════════════════════════════ -->
+<div id="screen-registro" class="screen">
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="52" height="52" viewBox="0 0 100 110" fill="none">
+          <path d="M28 28 L36 10 L50 22 L64 10 L72 28 Z" fill="#e8b800"/>
+          <rect x="26" y="26" width="48" height="6" rx="2" fill="#e8b800"/>
+          <path d="M15 40 L15 75 Q15 95 50 105 Q85 95 85 75 L85 40 Z" fill="#0b4d22" stroke="#e8b800" stroke-width="2"/>
+          <path d="M22 44 L22 74 Q22 90 50 100 Q78 90 78 44 Z" fill="#1a7a3c"/>
+          <circle cx="50" cy="72" r="15" fill="white" opacity=".9"/>
+          <text x="50" y="76" text-anchor="middle" font-size="6" font-weight="800" fill="#0b4d22" font-family="sans-serif">CDVT</text>
+        </svg>
+        <div class="sidebar-logo-text">
+          <div class="club-name">To Crown</div>
+          <div class="club-sub">Club de Voleibol</div>
+        </div>
+      </div>
+      <div class="sidebar-user"><div class="avatar">A</div><div class="sidebar-user-info"><div class="name">Admin General</div><div class="role">Administrador</div></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item" onclick="show('dashboard')"><span class="icon">📊</span> Dashboard</a>
+        <a class="nav-item" onclick="show('jugadoras')"><span class="icon">👥</span> Jugadoras</a>
+        <a class="nav-item" onclick="show('campeonatos')"><span class="icon">🏆</span> Campeonatos</a>
+        <div class="nav-section-title">Gestión</div>
+        <a class="nav-item active" onclick="show('registro')"><span class="icon">➕</span> Registrar Jugadora</a>
+        <a class="nav-item"><span class="icon">👕</span> Uniformes & Tallas</a>
+      </nav>
+      <div class="sidebar-bottom"><button class="btn-logout" onclick="show('login')">⬅ Cerrar Sesión</button></div>
+    </aside>
+    <div class="topbar">
+      <div class="topbar-title">Registrar Jugadora</div>
+      <div class="topbar-actions">
+        <button class="btn-sm outline" onclick="show('jugadoras')">Cancelar</button>
+        <button class="btn-sm gold">Guardar Registro</button>
+      </div>
+    </div>
+    <main class="main-content">
+      <div class="page-body">
+
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;">
+
+          <!-- Formulario principal -->
+          <div>
+
+            <!-- Datos personales -->
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-body">
+                <div class="form-section-title">👤 Datos Personales</div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label>Nombres *</label>
+                    <input type="text" placeholder="Ej: Valentina" />
+                  </div>
+                  <div class="field">
+                    <label>Apellidos *</label>
+                    <input type="text" placeholder="Ej: Torres Gómez" />
+                  </div>
+                  <div class="field">
+                    <label>Tipo de Documento *</label>
+                    <select>
+                      <option>Cédula de Ciudadanía</option>
+                      <option>Tarjeta de Identidad</option>
+                      <option>Pasaporte</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Número de Documento *</label>
+                    <input type="text" placeholder="Ej: 1234567890" />
+                  </div>
+                  <div class="field">
+                    <label>Fecha de Nacimiento *</label>
+                    <input type="date" />
+                  </div>
+                  <div class="field">
+                    <label>Lugar de Nacimiento</label>
+                    <input type="text" placeholder="Ciudad, Departamento" />
+                  </div>
+                  <div class="field">
+                    <label>Correo Electrónico *</label>
+                    <input type="email" placeholder="correo@email.com" />
+                  </div>
+                  <div class="field">
+                    <label>Teléfono / Celular *</label>
+                    <input type="tel" placeholder="300 000 0000" />
+                  </div>
+                  <div class="field full">
+                    <label>Dirección de Residencia</label>
+                    <input type="text" placeholder="Calle, Carrera, Barrio, Ciudad" />
+                  </div>
+                </div>
+
+                <div class="form-section-title">🏐 Datos Deportivos</div>
+                <div class="form-grid-3">
+                  <div class="field">
+                    <label>Posición *</label>
+                    <select>
+                      <option>Seleccionar...</option>
+                      <option>Armadora</option>
+                      <option>Central</option>
+                      <option>Receptora</option>
+                      <option>Opuesta</option>
+                      <option>Líbero</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Número de Camiseta</label>
+                    <input type="number" placeholder="Ej: 7" min="1" max="99" />
+                  </div>
+                  <div class="field">
+                    <label>Estatura (cm)</label>
+                    <input type="number" placeholder="Ej: 175" />
+                  </div>
+                  <div class="field">
+                    <label>Peso (kg)</label>
+                    <input type="number" placeholder="Ej: 65" />
+                  </div>
+                  <div class="field">
+                    <label>Mano Dominante</label>
+                    <select><option>Derecha</option><option>Izquierda</option></select>
+                  </div>
+                  <div class="field">
+                    <label>Estado</label>
+                    <select><option>Activa</option><option>Inactiva</option></select>
+                  </div>
+                </div>
+
+                <div class="form-section-title">👕 Tallas de Uniforme</div>
+                <div class="form-grid-3">
+                  <div class="field">
+                    <label>Camiseta / Jersey</label>
+                    <select><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
+                  </div>
+                  <div class="field">
+                    <label>Short / Pantaloneta</label>
+                    <select><option>S</option><option>M</option><option selected>L</option><option>XL</option></select>
+                  </div>
+                  <div class="field">
+                    <label>Licra / Malla</label>
+                    <select><option>XS</option><option selected>S</option><option>M</option><option>L</option></select>
+                  </div>
+                  <div class="field">
+                    <label>Buzo / Sudadera</label>
+                    <select><option>S</option><option selected>M</option><option>L</option><option>XL</option></select>
+                  </div>
+                  <div class="field">
+                    <label>Número de Calzado</label>
+                    <input type="number" placeholder="Ej: 38" />
+                  </div>
+                  <div class="field">
+                    <label>Rodilleras</label>
+                    <select><option>S</option><option selected>M</option><option>L</option></select>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Datos médicos/salud -->
+            <div class="card">
+              <div class="card-body">
+                <div class="form-section-title">⚕️ Información de Salud <span style="font-size:11px;color:var(--gray-500);font-weight:400;letter-spacing:0;">(Opcional)</span></div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label>Grupo Sanguíneo</label>
+                    <select>
+                      <option>No especificado</option>
+                      <option>A+</option><option>A-</option>
+                      <option>B+</option><option>B-</option>
+                      <option>O+</option><option>O-</option>
+                      <option>AB+</option><option>AB-</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>EPS / Entidad de Salud</label>
+                    <input type="text" placeholder="Ej: Sura, Nueva EPS..." />
+                  </div>
+                  <div class="field full">
+                    <label>¿Padece alguna condición médica o enfermedad?</label>
+                    <div class="check-group" style="margin-bottom:8px;">
+                      <label class="check-item"><input type="checkbox" /> Asma</label>
+                      <label class="check-item"><input type="checkbox" /> Diabetes</label>
+                      <label class="check-item"><input type="checkbox" checked /> Ninguna</label>
+                      <label class="check-item"><input type="checkbox" /> Hipertensión</label>
+                      <label class="check-item"><input type="checkbox" /> Epilepsia</label>
+                      <label class="check-item"><input type="checkbox" /> Otra</label>
+                    </div>
+                  </div>
+                  <div class="field full">
+                    <label>Alergias conocidas</label>
+                    <input type="text" placeholder="Medicamentos, alimentos, materiales... (separar con comas)" />
+                  </div>
+                  <div class="field full">
+                    <label>Lesiones anteriores relevantes</label>
+                    <textarea placeholder="Describir lesiones pasadas que puedan ser relevantes para el entrenamiento o competencia..."></textarea>
+                  </div>
+                  <div class="field full">
+                    <label>Observaciones médicas adicionales</label>
+                    <textarea placeholder="Cualquier otra información de salud relevante..."></textarea>
+                  </div>
+                </div>
+
+                <div class="form-section-title">📞 Contacto de Emergencia</div>
+                <div class="form-grid-3">
+                  <div class="field">
+                    <label>Nombre completo</label>
+                    <input type="text" placeholder="Nombre del contacto" />
+                  </div>
+                  <div class="field">
+                    <label>Parentesco</label>
+                    <select>
+                      <option>Madre</option><option>Padre</option>
+                      <option>Esposo/a</option><option>Hermano/a</option><option>Otro</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Teléfono</label>
+                    <input type="tel" placeholder="300 000 0000" />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel lateral -->
+          <div>
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-header"><div class="card-title">📸 Foto del jugadora</div></div>
+              <div class="card-body" style="text-align:center;">
+                <div style="width:120px;height:120px;border-radius:50%;background:var(--gray-200);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;border:3px dashed var(--gray-500);">📷</div>
+                <button class="btn-sm outline" style="width:100%;">Subir foto</button>
+                <p style="font-size:11px;color:var(--gray-500);margin-top:8px;">JPG o PNG, máx. 2MB</p>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-header"><div class="card-title">🔐 Acceso al Sistema</div></div>
+              <div class="card-body">
+                <div class="field" style="margin-bottom:12px;">
+                  <label>Usuario (correo)</label>
+                  <input type="email" placeholder="Auto-generado del correo" style="background:#f0f0f0;" readonly />
+                </div>
+                <div class="field">
+                  <label>Contraseña inicial</label>
+                  <input type="text" placeholder="Ej: Tocrown2025!" />
+                </div>
+                <p style="font-size:11px;color:var(--gray-500);margin-top:8px;">Se enviará al correo registrado.</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div class="card-title">🏆 Inscribir en Campeonatos</div></div>
+              <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <label class="check-item" style="background:rgba(232,184,0,.1);border:1px solid var(--gold);">
+                    <input type="checkbox" checked /> Copa Gobernación 2025
+                  </label>
+                  <label class="check-item">
+                    <input type="checkbox" /> Campeonato Nacional Sub-23
+                  </label>
+                  <label class="check-item">
+                    <input type="checkbox" /> Liga Municipal 2025
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Barra de acciones final -->
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;padding:16px;background:white;border-radius:var(--radius);box-shadow:var(--shadow-card);">
+          <button class="btn-sm outline" onclick="show('jugadoras')">Cancelar</button>
+          <button class="btn-sm green">Guardar borrador</button>
+          <button class="btn-sm gold" style="padding:10px 28px;font-size:14px;">✓ Registrar Jugadora</button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PANTALLA 5 — MI PERFIL (JUGADORA)
+══════════════════════════════ -->
+<div id="screen-perfil" class="screen">
+  <div class="app-layout">
+    <!-- Sidebar jugadora -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="52" height="52" viewBox="0 0 100 110" fill="none">
+          <path d="M28 28 L36 10 L50 22 L64 10 L72 28 Z" fill="#e8b800"/>
+          <rect x="26" y="26" width="48" height="6" rx="2" fill="#e8b800"/>
+          <path d="M15 40 L15 75 Q15 95 50 105 Q85 95 85 75 L85 40 Z" fill="#0b4d22" stroke="#e8b800" stroke-width="2"/>
+          <path d="M22 44 L22 74 Q22 90 50 100 Q78 90 78 44 Z" fill="#1a7a3c"/>
+          <circle cx="50" cy="72" r="15" fill="white" opacity=".9"/>
+          <text x="50" y="76" text-anchor="middle" font-size="6" font-weight="800" fill="#0b4d22" font-family="sans-serif">CDVT</text>
+        </svg>
+        <div class="sidebar-logo-text">
+          <div class="club-name">To Crown</div>
+          <div class="club-sub">Club de Voleibol</div>
+        </div>
+      </div>
+      <div class="sidebar-user">
+        <div class="avatar">V</div>
+        <div class="sidebar-user-info">
+          <div class="name">Valentina Torres</div>
+          <div class="role">Jugadora · #7</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Mi cuenta</div>
+        <a class="nav-item active"><span class="icon">👤</span> Mi Perfil</a>
+        <a class="nav-item" onclick="show('campeonatos')"><span class="icon">🏆</span> Mis Campeonatos</a>
+        <a class="nav-item"><span class="icon">📅</span> Calendario</a>
+        <a class="nav-item"><span class="icon">🔔</span> Notificaciones</a>
+        <a class="nav-item"><span class="icon">🔑</span> Cambiar Contraseña</a>
+      </nav>
+      <div class="sidebar-bottom"><button class="btn-logout" onclick="show('login')">⬅ Cerrar Sesión</button></div>
+    </aside>
+
+    <div class="topbar">
+      <div class="topbar-title">Mi Perfil</div>
+      <div class="topbar-actions">
+        <button class="btn-sm gold" id="editBtn" onclick="toggleEdit()">✏️ Editar mi información</button>
+      </div>
+    </div>
+
+    <main class="main-content">
+      <div class="page-body">
+
+        <!-- Header de perfil -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="profile-header">
+            <div class="avatar-lg">V</div>
+            <div style="flex:1;">
+              <div class="profile-name">Valentina Torres Gómez</div>
+              <div class="profile-sub">Líbero · Club Deportivo de Voleibol To Crown</div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <span class="pill pill-green">Activa</span>
+                <span style="background:rgba(232,184,0,.2);color:var(--gold-light);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">Copa Gobernación 2025</span>
+                <span style="background:rgba(232,184,0,.2);color:var(--gold-light);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">Nac. Sub-23</span>
+              </div>
+            </div>
+            <div class="profile-number">7</div>
+          </div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center;">
+              <div>
+                <div style="font-size:22px;font-weight:800;color:var(--green-dark);">175 cm</div>
+                <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;">Estatura</div>
+              </div>
+              <div>
+                <div style="font-size:22px;font-weight:800;color:var(--green-dark);">62 kg</div>
+                <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;">Peso</div>
+              </div>
+              <div>
+                <div style="font-size:22px;font-weight:800;color:var(--green-dark);">22</div>
+                <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;">Años</div>
+              </div>
+              <div>
+                <div style="font-size:22px;font-weight:800;color:var(--gold-dark);">2</div>
+                <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;">Campeonatos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+          <div>
+            <!-- Información personal -->
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header">
+                <div class="card-title">👤 Información Personal</div>
+                <button class="btn-sm outline" onclick="toggleEdit()">Editar</button>
+              </div>
+              <div class="card-body">
+                <div class="info-block">
+                  <div class="info-item"><label>Documento</label><span>CC 1.234.567.890</span></div>
+                  <div class="info-item"><label>Fecha de Nacimiento</label><span>15 Mar 2003</span></div>
+                  <div class="info-item"><label>Lugar de Nacimiento</label><span>Medellín, Antioquia</span></div>
+                  <div class="info-item"><label>Correo Electrónico</label><span>v.torres@email.com</span></div>
+                  <div class="info-item"><label>Teléfono</label><span>312 345 6789</span></div>
+                  <div class="info-item"><label>Dirección</label><span>Cra 45 #12-34, El Poblado</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tallas -->
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header">
+                <div class="card-title">👕 Mis Tallas de Uniforme</div>
+                <button class="btn-sm outline" onclick="toggleEdit()">Actualizar</button>
+              </div>
+              <div class="card-body">
+                <div class="tallas-grid">
+                  <div class="talla-box active">
+                    <div class="t-label">Camiseta</div>
+                    <div class="t-value">M</div>
+                  </div>
+                  <div class="talla-box active">
+                    <div class="t-label">Short</div>
+                    <div class="t-value">S</div>
+                  </div>
+                  <div class="talla-box active">
+                    <div class="t-label">Licra</div>
+                    <div class="t-value">S</div>
+                  </div>
+                  <div class="talla-box active">
+                    <div class="t-label">Buzo</div>
+                    <div class="t-value">M</div>
+                  </div>
+                  <div class="talla-box active">
+                    <div class="t-label">Calzado</div>
+                    <div class="t-value">38</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Salud -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">⚕️ Información de Salud</div>
+                <button class="btn-sm outline" onclick="toggleEdit()">Editar</button>
+              </div>
+              <div class="card-body">
+                <div class="info-block" style="margin-bottom:16px;">
+                  <div class="info-item"><label>Grupo Sanguíneo</label><span>O+</span></div>
+                  <div class="info-item"><label>EPS</label><span>Sura</span></div>
+                  <div class="info-item"><label>Condiciones Médicas</label><span style="color:var(--green-mid);font-weight:700;">Ninguna</span></div>
+                </div>
+                <div class="info-item" style="margin-bottom:10px;">
+                  <label>Alergias</label>
+                  <span>Ninguna reportada</span>
+                </div>
+                <div class="info-item">
+                  <label>Contacto de Emergencia</label>
+                  <span>Madre — Gloria Gómez · 310 987 6543</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel derecho -->
+          <div>
+            <!-- Mis campeonatos -->
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-header">
+                <div class="card-title">🏆 Mis Campeonatos</div>
+                <button class="btn-sm green" onclick="show('campeonatos')">Ver todos</button>
+              </div>
+              <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+                <div style="background:linear-gradient(135deg,var(--green-dark),var(--green-mid));border-radius:10px;padding:14px;color:white;">
+                  <div style="font-size:10px;opacity:.7;letter-spacing:1px;text-transform:uppercase;">Activo</div>
+                  <div style="font-size:14px;font-weight:800;margin:3px 0;">Copa Gobernación 2025</div>
+                  <div style="font-size:11px;opacity:.75;">📅 14 Jun · Próxima fase</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#1a3a6b,#2d5aa0);border-radius:10px;padding:14px;color:white;">
+                  <div style="font-size:10px;opacity:.7;letter-spacing:1px;text-transform:uppercase;">Inscrita</div>
+                  <div style="font-size:14px;font-weight:800;margin:3px 0;">Campeonato Nac. Sub-23</div>
+                  <div style="font-size:11px;opacity:.75;">📅 28 Jul · Bogotá D.C.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Perfil completo -->
+            <div class="card">
+              <div class="card-header"><div class="card-title">📋 Completitud del Perfil</div></div>
+              <div class="card-body">
+                <div style="font-size:28px;font-weight:800;color:var(--green-dark);">85%</div>
+                <div class="prog-bar"><div class="prog-fill" style="width:85%;"></div></div>
+                <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;font-size:12px;">
+                    <span>✅ Datos personales</span><span style="color:var(--green-mid);">Completo</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;">
+                    <span>✅ Datos deportivos</span><span style="color:var(--green-mid);">Completo</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;">
+                    <span>✅ Tallas de uniforme</span><span style="color:var(--green-mid);">Completo</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;">
+                    <span>⚠️ Foto de perfil</span><span style="color:var(--gold-dark);">Pendiente</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;">
+                    <span>✅ Contacto emergencia</span><span style="color:var(--green-mid);">Completo</span>
+                  </div>
+                </div>
+                <button class="btn-sm gold" style="width:100%;margin-top:14px;" onclick="toggleEdit()">Completar perfil</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     PANTALLA 6 — CAMPEONATOS
+══════════════════════════════ -->
+<div id="screen-campeonatos" class="screen">
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="52" height="52" viewBox="0 0 100 110" fill="none">
+          <path d="M28 28 L36 10 L50 22 L64 10 L72 28 Z" fill="#e8b800"/>
+          <rect x="26" y="26" width="48" height="6" rx="2" fill="#e8b800"/>
+          <path d="M15 40 L15 75 Q15 95 50 105 Q85 95 85 75 L85 40 Z" fill="#0b4d22" stroke="#e8b800" stroke-width="2"/>
+          <path d="M22 44 L22 74 Q22 90 50 100 Q78 90 78 44 Z" fill="#1a7a3c"/>
+          <circle cx="50" cy="72" r="15" fill="white" opacity=".9"/>
+          <text x="50" y="76" text-anchor="middle" font-size="6" font-weight="800" fill="#0b4d22" font-family="sans-serif">CDVT</text>
+        </svg>
+        <div class="sidebar-logo-text">
+          <div class="club-name">To Crown</div>
+          <div class="club-sub">Club de Voleibol</div>
+        </div>
+      </div>
+      <div class="sidebar-user"><div class="avatar">A</div><div class="sidebar-user-info"><div class="name">Admin General</div><div class="role">Administrador</div></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item" onclick="show('dashboard')"><span class="icon">📊</span> Dashboard</a>
+        <a class="nav-item" onclick="show('jugadoras')"><span class="icon">👥</span> Jugadoras</a>
+        <a class="nav-item active" onclick="show('campeonatos')"><span class="icon">🏆</span> Campeonatos</a>
+        <div class="nav-section-title">Gestión</div>
+        <a class="nav-item" onclick="show('registro')"><span class="icon">➕</span> Registrar Jugadora</a>
+        <a class="nav-item"><span class="icon">👕</span> Uniformes & Tallas</a>
+      </nav>
+      <div class="sidebar-bottom"><button class="btn-logout" onclick="show('login')">⬅ Cerrar Sesión</button></div>
+    </aside>
+    <div class="topbar">
+      <div class="topbar-title">Campeonatos</div>
+      <div class="topbar-actions">
+        <button class="btn-sm gold">+ Nuevo Campeonato</button>
+      </div>
+    </div>
+    <main class="main-content">
+      <div class="page-body">
+
+        <!-- Campeonatos activos -->
+        <div style="font-size:13px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Activos</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+
+          <!-- Campeonato 1 -->
+          <div class="card" style="overflow:hidden;">
+            <div style="background:linear-gradient(135deg,var(--green-dark),var(--green-mid));padding:24px 24px 20px;color:white;position:relative;">
+              <div style="position:absolute;top:16px;right:16px;background:var(--gold);color:var(--green-dark);font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;">EN CURSO</div>
+              <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Liga Departamental</div>
+              <div style="font-size:20px;font-weight:800;margin-bottom:12px;">Copa Gobernación 2025</div>
+              <div style="display:flex;gap:20px;font-size:12px;opacity:.85;flex-wrap:wrap;">
+                <span>📅 14 Jun — 15 Jul 2025</span>
+                <span>📍 Coliseo Central, Medellín</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;text-align:center;">
+                <div style="background:var(--gray-100);border-radius:8px;padding:12px;">
+                  <div style="font-size:22px;font-weight:800;color:var(--green-dark);">18</div>
+                  <div style="font-size:11px;color:var(--gray-500);">Inscritas</div>
+                </div>
+                <div style="background:var(--gray-100);border-radius:8px;padding:12px;">
+                  <div style="font-size:22px;font-weight:800;color:var(--green-dark);">4</div>
+                  <div style="font-size:11px;color:var(--gray-500);">Partidos</div>
+                </div>
+                <div style="background:var(--gray-100);border-radius:8px;padding:12px;">
+                  <div style="font-size:22px;font-weight:800;color:var(--gold-dark);">3W/1L</div>
+                  <div style="font-size:11px;color:var(--gray-500);">Balance</div>
+                </div>
+              </div>
+              <!-- Fase -->
+              <div style="margin-bottom:14px;">
+                <div style="font-size:12px;color:var(--gray-500);margin-bottom:6px;font-weight:700;">FASE ACTUAL: Cuartos de Final</div>
+                <div style="display:flex;gap:4px;">
+                  <div style="flex:1;height:6px;background:var(--green-mid);border-radius:4px;"></div>
+                  <div style="flex:1;height:6px;background:var(--green-mid);border-radius:4px;"></div>
+                  <div style="flex:1;height:6px;background:var(--gold);border-radius:4px;"></div>
+                  <div style="flex:1;height:6px;background:var(--gray-200);border-radius:4px;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-500);margin-top:4px;">
+                  <span>Grupos</span><span>Octavos</span><span style="color:var(--gold);font-weight:700;">Cuartos</span><span>Semi/Final</span>
+                </div>
+              </div>
+              <!-- Próximo partido -->
+              <div style="background:rgba(26,122,60,.07);border:1.5px solid rgba(26,122,60,.15);border-radius:8px;padding:12px;">
+                <div style="font-size:10px;color:var(--green-mid);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Próximo Partido</div>
+                <div style="font-size:14px;font-weight:700;">To Crown vs. Medellín Volley</div>
+                <div style="font-size:12px;color:var(--gray-500);margin-top:2px;">📅 Sábado 14 Jun, 3:00 PM · Coliseo Central</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:14px;">
+                <button class="btn-sm green" style="flex:1;">Ver detalle</button>
+                <button class="btn-sm outline">Gestionar inscritas</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campeonato 2 -->
+          <div class="card" style="overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#1a3a6b,#2d5aa0);padding:24px 24px 20px;color:white;position:relative;">
+              <div style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);color:white;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;">INSCRIPCIÓN ABIERTA</div>
+              <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Torneo Nacional</div>
+              <div style="font-size:20px;font-weight:800;margin-bottom:12px;">Campeonato Nacional Sub-23</div>
+              <div style="display:flex;gap:20px;font-size:12px;opacity:.85;flex-wrap:wrap;">
+                <span>📅 28 Jul — 5 Ago 2025</span>
+                <span>📍 Bogotá D.C.</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;text-align:center;">
+                <div style="background:var(--gray-100);border-radius:8px;padding:12px;">
+                  <div style="font-size:22px;font-weight:800;color:var(--green-dark);">12</div>
+                  <div style="font-size:11px;color:var(--gray-500);">Inscritas</div>
+                </div>
+                <div style="background:rgba(232,184,0,.1);border-radius:8px;padding:12px;">
+                  <div style="font-size:22px;font-weight:800;color:var(--gold-dark);">5</div>
+                  <div style="font-size:11px;color:var(--gray-500);">Pendientes</div>
+                </div>
+                <div style="background:var(--gray-100);border-radius:8px;padding:12px;">
+                  <div style="font-size:22px;font-weight:800;color:var(--green-dark);">47</div>
+                  <div style="font-size:11px;color:var(--gray-500);">Días</div>
+                </div>
+              </div>
+              <!-- Progreso inscripción -->
+              <div style="margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+                  <span style="font-weight:700;color:var(--gray-800);">Progreso de inscripción</span>
+                  <span style="color:var(--gray-500);">12 / 14 jugadoras</span>
+                </div>
+                <div class="prog-bar"><div class="prog-fill" style="width:85%;"></div></div>
+              </div>
+              <!-- Lista rápida de inscritas -->
+              <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">Jugadoras Inscritas</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--green-dark);">V</div>
+                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--green-dark);">M</div>
+                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--green-dark);">L</div>
+                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--green-dark);">C</div>
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--gray-500);font-weight:700;">+8</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-sm green" style="flex:1;">Ver detalle</button>
+                <button class="btn-sm outline">Gestionar inscritas</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historial -->
+        <div style="font-size:13px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Historial</div>
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Campeonato</th>
+                  <th>Año</th>
+                  <th>Categoría</th>
+                  <th>Posición</th>
+                  <th>Jugadoras</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Liga Municipal Medellín</strong></td>
+                  <td>2024</td>
+                  <td><span class="pill pill-gray">Local</span></td>
+                  <td>🥇 1er puesto</td>
+                  <td>20</td>
+                  <td><button class="btn-sm outline">Ver</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Copa Antioquia</strong></td>
+                  <td>2024</td>
+                  <td><span class="pill pill-gray">Departamental</span></td>
+                  <td>🥈 2do puesto</td>
+                  <td>18</td>
+                  <td><button class="btn-sm outline">Ver</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Campeonato Nacional Sub-23</strong></td>
+                  <td>2023</td>
+                  <td><span class="pill pill-gold">Nacional</span></td>
+                  <td>🏅 4to puesto</td>
+                  <td>15</td>
+                  <td><button class="btn-sm outline">Ver</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-mockup button').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    // Marcar el botón correcto
+    const labels = ['login','dashboard','jugadoras','registro','perfil','campeonatos'];
+    const idx = labels.indexOf(id);
+    if(idx >= 0) document.querySelectorAll('.nav-mockup button')[idx].classList.add('active');
+  }
+
+  function toggleEdit() {
+    const btn = document.getElementById('editBtn');
+    if(btn) {
+      const editing = btn.textContent.includes('Cancelar');
+      btn.textContent = editing ? '✏️ Editar mi información' : '✖ Cancelar edición';
+      btn.className = editing ? 'btn-sm gold' : 'btn-sm outline';
+    }
+  }
+</script>
+</body>
+</html>
