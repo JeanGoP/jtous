@@ -22,7 +22,15 @@ var tokens = new ConcurrentDictionary<string, string>();
 
 app.UseCors();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        context.Context.Response.Headers.Pragma = "no-cache";
+        context.Context.Response.Headers.Expires = "0";
+    }
+});
 
 User? Current(HttpRequest request, IAppStore store)
 {
