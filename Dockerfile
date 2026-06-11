@@ -8,7 +8,7 @@ RUN dotnet publish src/ToCrown.Api/ToCrown.Api.csproj -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:8080
-ENV TOCROWN_DB_PATH=/data/database.json
+ENV TOCROWN_DB_PATH=/tmp/tocrown/database.json
 COPY --from=build /app/publish .
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "ToCrown.Api.dll"]
