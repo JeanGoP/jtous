@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tocrown
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    disk:
+      name: tocrown-data
+      mountPath: /data
+      sizeGB: 1
+    healthCheckPath: /

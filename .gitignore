@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+.vscode/
+src/ToCrown.Api/Data/database.json
+*.user
+*.suo
+*.log
