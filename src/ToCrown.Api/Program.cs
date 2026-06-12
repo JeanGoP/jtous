@@ -40,7 +40,10 @@ User? Current(HttpRequest request, IAppStore store)
 {
     var header = request.Headers.Authorization.ToString();
     var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..] : "";
-    return tokens.TryGetValue(token, out var userId) ? store.Load().Users.FirstOrDefault(user => user.Id == userId && user.Enabled) : null;
+    if (!tokens.TryGetValue(token, out var userId)) return null;
+    return store is SqlDataStore sqlStore
+        ? sqlStore.GetEnabledUser(userId)
+        : store.Load().Users.FirstOrDefault(user => user.Id == userId && user.Enabled);
 }
 
 bool IsAdmin(HttpRequest request, IAppStore store)
@@ -51,20 +54,22 @@ bool IsAdmin(HttpRequest request, IAppStore store)
 
 app.MapPost("/api/auth/login", (LoginRequest login, IAppStore store) =>
 {
-    var db = store.Load();
     var identifier = login.Email.Trim();
     var password = login.Password.Trim();
-    var user = db.Users.FirstOrDefault(item =>
-        item.Password == password &&
-        item.Enabled &&
-        (item.Email.Equals(identifier, StringComparison.OrdinalIgnoreCase) ||
-         db.Players.Any(player => player.UserId == item.Id && player.Document.Equals(identifier, StringComparison.OrdinalIgnoreCase))));
+    var db = store is SqlDataStore ? null : store.Load();
+    var user = store is SqlDataStore sqlStore
+        ? sqlStore.Authenticate(identifier, password)
+        : db!.Users.FirstOrDefault(item =>
+            item.Password == password &&
+            item.Enabled &&
+            (item.Email.Equals(identifier, StringComparison.OrdinalIgnoreCase) ||
+             db.Players.Any(player => player.UserId == item.Id && player.Document.Equals(identifier, StringComparison.OrdinalIgnoreCase))));
 
     if (user is null) return Results.Unauthorized();
 
     var token = Guid.NewGuid().ToString("N");
     tokens[token] = user.Id;
-    var player = db.Players.FirstOrDefault(item => item.UserId == user.Id);
+    var player = store is SqlDataStore sql ? sql.GetPlayerByUserId(user.Id) : db!.Players.FirstOrDefault(item => item.UserId == user.Id);
     return Results.Ok(new LoginResponse(token, user, player));
 });
 
@@ -132,7 +137,8 @@ app.MapGet("/api/player/snapshot", (HttpRequest request, IAppStore store) =>
 app.MapPost("/api/admin/players", (HttpRequest request, PlayerPayload payload, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
-    UpsertPlayer(payload, store, allowAccessChange: true);
+    if (store is SqlDataStore sqlStore) sqlStore.UpsertPlayerPayload(payload, allowAccessChange: true);
+    else UpsertPlayer(payload, store, allowAccessChange: true);
     return Results.Ok(store.Load());
 });
 
@@ -140,8 +146,25 @@ app.MapPut("/api/player/profile", (HttpRequest request, PlayerPayload payload, I
 {
     var user = Current(request, store);
     if (user is null || user.Role != "player" || payload.User.Id != user.Id) return Results.Unauthorized();
+    if (store is SqlDataStore sqlStore)
+    {
+        sqlStore.UpsertPlayerPayload(payload, allowAccessChange: false);
+        return Results.Ok(sqlStore.GetPlayerByUserId(user.Id));
+    }
     UpsertPlayer(payload, store, allowAccessChange: false);
     return Results.Ok(store.Load().Players.First(player => player.UserId == user.Id));
+});
+
+app.MapGet("/api/players/{id}/identity-pdf", (HttpRequest request, string id, IAppStore store) =>
+{
+    var user = Current(request, store);
+    if (user is null) return Results.Unauthorized();
+    var db = store.Load();
+    var player = db.Players.FirstOrDefault(item => item.Id == id);
+    if (player is null) return Results.NotFound();
+    if (user.Role == "player" && player.UserId != user.Id) return Results.Unauthorized();
+    var pdf = store is SqlDataStore sqlStore ? sqlStore.GetIdentityPdf(id) : player.IdentityPdf;
+    return Results.Ok(new { identityPdf = pdf });
 });
 
 app.MapPost("/api/admin/championships", (HttpRequest request, Championship championship, IAppStore store) =>

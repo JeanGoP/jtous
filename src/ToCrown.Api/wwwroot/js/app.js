@@ -296,7 +296,7 @@ const App = {
     this.title("Mi Perfil");
     const p = this.db.player;
     this.actions(`<button class="btn-sm gold" onclick="App.openPlayer('${p.id}')">Editar mi informacion</button>`);
-    this.view(`<div class="card"><div class="profile-header"><div style="display:flex;gap:18px;align-items:center"><div class="avatar avatar-lg">${p.photo ? `<img src="${p.photo}">` : this.initials(p.fullName)}</div><div><div class="profile-name">${this.esc(p.fullName)}</div><div class="profile-sub">${this.esc(p.position)} · Club Deportivo de Voleibol To Crown</div><span class="pill pill-green">${this.esc(p.status)}</span></div></div><div class="profile-number">${this.esc(p.number)}</div></div><div class="card-body two-col"><div><div class="card-title">Informacion Personal</div>${this.summary([["Documento", `${p.documentType} ${p.document}`],["Telefono", p.phone],["Ciudad", p.city],["Direccion", p.address],["PDF tarjeta", p.identityPdf ? "Cargado" : "Pendiente"]])}</div><div><div class="card-title">Tallas y Salud</div>${this.summary([["Camiseta", p.sizes.shirt],["Short", p.sizes.short],["Licra", p.sizes.lycra],["Buzo", p.sizes.jacket],["Calzado", p.sizes.shoes],["Condicion", p.health.conditions || "Sin reporte"]])}</div></div></div>`);
+    this.view(`<div class="card"><div class="profile-header"><div style="display:flex;gap:18px;align-items:center"><div class="avatar avatar-lg">${p.photo ? `<img src="${p.photo}">` : this.initials(p.fullName)}</div><div><div class="profile-name">${this.esc(p.fullName)}</div><div class="profile-sub">${this.esc(p.position)} · Club Deportivo de Voleibol To Crown</div><span class="pill pill-green">${this.esc(p.status)}</span></div></div><div class="profile-number">${this.esc(p.number)}</div></div><div class="card-body two-col"><div><div class="card-title">Informacion Personal</div>${this.summary([["Documento", `${p.documentType} ${p.document}`],["Telefono", p.phone],["Ciudad", p.city],["Direccion", p.address],["PDF tarjeta", this.hasPdf(p) ? "Cargado" : "Pendiente"]])}</div><div><div class="card-title">Tallas y Salud</div>${this.summary([["Camiseta", p.sizes.shirt],["Short", p.sizes.short],["Licra", p.sizes.lycra],["Buzo", p.sizes.jacket],["Calzado", p.sizes.shoes],["Condicion", p.health.conditions || "Sin reporte"]])}</div></div></div>`);
   },
   myPayments() {
     this.title("Mis Mensualidades");
@@ -384,7 +384,7 @@ const App = {
             ["Tallas", `Cam ${p.sizes?.shirt || ""} / Licra ${p.sizes?.lycra || ""} / Pant ${p.sizes?.short || ""} / Calzado ${p.sizes?.shoes || ""}`],
             ["Estado", p.status]
           ])}
-          ${p.identityPdf ? `<button type="button" class="btn-sm outline" onclick="App.viewPdf('${p.id}', true)">Ver tarjeta de identidad</button>` : ""}
+          ${this.hasPdf(p) ? `<button type="button" class="btn-sm outline" onclick="App.viewPdf('${p.id}', true)">Ver tarjeta de identidad</button>` : ""}
         </div>
       </div>`,
       `<button class="btn-sm outline" onclick="App.closeModal()">Cerrar</button><button class="btn-sm gold" onclick="App.closeModal();App.openPlayer('${p.id}')">Editar</button>`);
@@ -471,8 +471,8 @@ const App = {
               <div class="card-header"><div class="card-title">Documento PDF</div></div>
               <div class="card-body">
                 <label class="upload-btn">Adjuntar tarjeta de identidad<input name="identityFile" type="file" accept="application/pdf"></label>
-                <span class="pill ${p.identityPdf ? "pill-green" : "pill-gray"}">${p.identityPdf ? "PDF cargado" : "Sin PDF"}</span>
-                ${p.identityPdf ? `<button type="button" class="btn-sm outline" style="width:100%;margin-top:10px" onclick="App.viewPdf('${p.id}', true)">Ver tarjeta</button>` : ""}
+                <span class="pill ${this.hasPdf(p) ? "pill-green" : "pill-gray"}">${this.hasPdf(p) ? "PDF cargado" : "Sin PDF"}</span>
+                ${this.hasPdf(p) ? `<button type="button" class="btn-sm outline" style="width:100%;margin-top:10px" onclick="App.viewPdf('${p.id}', true)">Ver tarjeta</button>` : ""}
               </div>
             </div>
             <div class="card">
@@ -725,11 +725,16 @@ const App = {
     };
     reader.readAsDataURL(file);
   },
-  viewPdf(playerId, returnToPlayer = false) {
+  async viewPdf(playerId, returnToPlayer = false) {
     const collection = this.db.players || (this.db.player ? [this.db.player] : []);
     const player = collection.find(p => p.id === playerId) || this.db.player;
-    if (!player?.identityPdf) return alert("Esta jugadora no tiene PDF cargado.");
-    this.modal("Tarjeta de identidad", `<iframe class="pdf-viewer" src="${player.identityPdf}"></iframe>`, `<button class="btn-sm outline" onclick="${returnToPlayer ? `App.openPlayerInfo('${player.id}')` : "App.closeModal()"}">Cerrar</button>`);
+    if (!this.hasPdf(player)) return alert("Esta jugadora no tiene PDF cargado.");
+    const data = player.identityPdf ? { identityPdf: player.identityPdf } : await Api.request(`/api/players/${playerId}/identity-pdf`);
+    if (!data.identityPdf) return alert("Esta jugadora no tiene PDF cargado.");
+    this.modal("Tarjeta de identidad", `<iframe class="pdf-viewer" src="${data.identityPdf}"></iframe>`, `<button class="btn-sm outline" onclick="${returnToPlayer ? `App.openPlayerInfo('${player.id}')` : "App.closeModal()"}">Cerrar</button>`);
+  },
+  hasPdf(player) {
+    return Boolean(player?.identityPdf || player?.hasIdentityPdf);
   },
   playerPhoto(player) {
     return player?.photo || this.animePlaceholder();
@@ -770,7 +775,7 @@ const App = {
     if (target) target.value = selected.join(", ");
   },
   namePart(name, index) { return String(name || "").split(" ").filter(Boolean)[index] || ""; },
-  emptyPlayer() { return { id:"", userId:"", firstName:"", secondName:"", firstLastName:"", secondLastName:"", fullName:"", documentType:"", document:"", birthDate:"", birthCity:"", sex:"", joinDate:"", city:this.db.club.city, phone:"", address:"", guardian:"", guardianPhone:"", guardianRelation:"", position:"", secondaryPosition:"", number:"", category:"Juvenil", status:"Activa", height:"", weight:"", dominantHand:"", sizes:{shirt:"",short:"",lycra:"",jacket:"",kneePads:"",shoes:""}, health:{blood:"",eps:"",conditions:"",allergies:"",diseases:"",meds:"",injuries:""}, emergency:{name:"",phone:"",relation:""}, photo:"", identityPdf:"", notes:"" }; }
+  emptyPlayer() { return { id:"", userId:"", firstName:"", secondName:"", firstLastName:"", secondLastName:"", fullName:"", documentType:"", document:"", birthDate:"", birthCity:"", sex:"", joinDate:"", city:this.db.club.city, phone:"", address:"", guardian:"", guardianPhone:"", guardianRelation:"", position:"", secondaryPosition:"", number:"", category:"Juvenil", status:"Activa", height:"", weight:"", dominantHand:"", sizes:{shirt:"",short:"",lycra:"",jacket:"",kneePads:"",shoes:""}, health:{blood:"",eps:"",conditions:"",allergies:"",diseases:"",meds:"",injuries:""}, emergency:{name:"",phone:"",relation:""}, photo:"", identityPdf:"", hasIdentityPdf:false, notes:"" }; }
 };
 
 document.addEventListener("DOMContentLoaded", () => App.init());

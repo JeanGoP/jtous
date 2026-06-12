@@ -62,6 +62,7 @@ public sealed class Player
     public Emergency Emergency { get; set; } = new();
     public string Photo { get; set; } = "";
     public string IdentityPdf { get; set; } = "";
+    public bool HasIdentityPdf { get; set; }
     public string Notes { get; set; } = "";
 }
 

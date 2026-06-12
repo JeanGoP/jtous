@@ -36,7 +36,11 @@ public sealed class SqlDataStore : IAppStore
             while (rd.Read()) db.Users.Add(new User { Id = S(rd, "Id"), Role = S(rd, "Role"), Name = S(rd, "Name"), Email = S(rd, "Email"), Password = S(rd, "Password"), Enabled = B(rd, "Enabled") });
         }
 
-        using (var cmd = new SqlCommand("SELECT * FROM dbo.Players ORDER BY FullName", cn))
+        using (var cmd = new SqlCommand(@"SELECT Id,UserId,FirstName,SecondName,FirstLastName,SecondLastName,FullName,DocumentType,Document,BirthDate,BirthCity,Sex,JoinDate,City,Phone,Address,Guardian,GuardianPhone,GuardianRelation,Position,SecondaryPosition,Number,Category,Status,Height,Weight,DominantHand,
+            CASE WHEN DATALENGTH(Photo) <= 350000 THEN Photo ELSE '' END AS Photo,
+            CAST(CASE WHEN DATALENGTH(IdentityPdf) > 0 THEN 1 ELSE 0 END AS bit) AS HasIdentityPdf,
+            Notes,Shirt,Short,Lycra,Jacket,KneePads,Shoes,Blood,Eps,Conditions,Allergies,Diseases,Meds,Injuries,EmergencyName,EmergencyPhone,EmergencyRelation
+            FROM dbo.Players ORDER BY FullName", cn))
         using (var rd = cmd.ExecuteReader())
         {
             while (rd.Read())
@@ -47,7 +51,7 @@ public sealed class SqlDataStore : IAppStore
                     FullName = S(rd, "FullName"), DocumentType = S(rd, "DocumentType"), Document = S(rd, "Document"), BirthDate = S(rd, "BirthDate"), BirthCity = S(rd, "BirthCity"), Sex = S(rd, "Sex"), JoinDate = S(rd, "JoinDate"),
                     City = S(rd, "City"), Phone = S(rd, "Phone"), Address = S(rd, "Address"), Guardian = S(rd, "Guardian"), GuardianPhone = S(rd, "GuardianPhone"), GuardianRelation = S(rd, "GuardianRelation"),
                     Position = S(rd, "Position"), SecondaryPosition = S(rd, "SecondaryPosition"), Number = S(rd, "Number"), Category = S(rd, "Category"), Status = S(rd, "Status"), Height = S(rd, "Height"), Weight = S(rd, "Weight"), DominantHand = S(rd, "DominantHand"),
-                    Photo = S(rd, "Photo"), IdentityPdf = S(rd, "IdentityPdf"), Notes = S(rd, "Notes"),
+                    Photo = S(rd, "Photo"), HasIdentityPdf = B(rd, "HasIdentityPdf"), Notes = S(rd, "Notes"),
                     Sizes = new Sizes { Shirt = S(rd, "Shirt"), Short = S(rd, "Short"), Lycra = S(rd, "Lycra"), Jacket = S(rd, "Jacket"), KneePads = S(rd, "KneePads"), Shoes = S(rd, "Shoes") },
                     Health = new Health { Blood = S(rd, "Blood"), Eps = S(rd, "Eps"), Conditions = S(rd, "Conditions"), Allergies = S(rd, "Allergies"), Diseases = S(rd, "Diseases"), Meds = S(rd, "Meds"), Injuries = S(rd, "Injuries") },
                     Emergency = new Emergency { Name = S(rd, "EmergencyName"), Phone = S(rd, "EmergencyPhone"), Relation = S(rd, "EmergencyRelation") }
@@ -109,6 +113,105 @@ public sealed class SqlDataStore : IAppStore
         return db;
     }
 
+    public User? Authenticate(string identifier, string password)
+    {
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var cmd = new SqlCommand(@"
+SELECT TOP 1 u.Id, u.Role, u.Name, u.Email, u.Password, u.Enabled
+FROM dbo.Users u
+LEFT JOIN dbo.Players p ON p.UserId = u.Id
+WHERE u.Enabled = 1
+  AND u.Password = @Password
+  AND (LOWER(u.Email) = LOWER(@Identifier) OR LOWER(ISNULL(p.Document, '')) = LOWER(@Identifier));", cn);
+        cmd.Parameters.AddWithValue("@Identifier", identifier);
+        cmd.Parameters.AddWithValue("@Password", password);
+        using var rd = cmd.ExecuteReader();
+        return rd.Read() ? ReadUser(rd) : null;
+    }
+
+    public User? GetEnabledUser(string id)
+    {
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var cmd = new SqlCommand("SELECT Id, Role, Name, Email, Password, Enabled FROM dbo.Users WHERE Id = @Id AND Enabled = 1", cn);
+        cmd.Parameters.AddWithValue("@Id", id);
+        using var rd = cmd.ExecuteReader();
+        return rd.Read() ? ReadUser(rd) : null;
+    }
+
+    public Player? GetPlayerByUserId(string userId)
+    {
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var cmd = new SqlCommand(@"
+SELECT TOP 1 Id,UserId,FirstName,SecondName,FirstLastName,SecondLastName,FullName,DocumentType,Document,BirthDate,BirthCity,Sex,JoinDate,City,Phone,Address,Guardian,GuardianPhone,GuardianRelation,Position,SecondaryPosition,Number,Category,Status,Height,Weight,DominantHand,
+    CASE WHEN DATALENGTH(Photo) <= 350000 THEN Photo ELSE '' END AS Photo,
+    CAST(CASE WHEN DATALENGTH(IdentityPdf) > 0 THEN 1 ELSE 0 END AS bit) AS HasIdentityPdf,
+    Notes,Shirt,Short,Lycra,Jacket,KneePads,Shoes,Blood,Eps,Conditions,Allergies,Diseases,Meds,Injuries,EmergencyName,EmergencyPhone,EmergencyRelation
+FROM dbo.Players WHERE UserId = @UserId", cn);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+        using var rd = cmd.ExecuteReader();
+        return rd.Read() ? ReadPlayer(rd) : null;
+    }
+
+    public string GetIdentityPdf(string playerId)
+    {
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var cmd = new SqlCommand("SELECT IdentityPdf FROM dbo.Players WHERE Id = @Id", cn);
+        cmd.Parameters.AddWithValue("@Id", playerId);
+        return Convert.ToString(cmd.ExecuteScalar()) ?? "";
+    }
+
+    public void UpsertPlayerPayload(PlayerPayload payload, bool allowAccessChange)
+    {
+        var user = payload.User;
+        var player = payload.Player;
+        if (string.IsNullOrWhiteSpace(user.Id)) user.Id = Guid.NewGuid().ToString("N");
+        if (string.IsNullOrWhiteSpace(player.Id)) player.Id = Guid.NewGuid().ToString("N");
+        player.UserId = user.Id;
+        user.Role = "player";
+        user.Name = player.FullName;
+
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var tx = cn.BeginTransaction();
+
+        if (!allowAccessChange)
+        {
+            using var enabledCmd = new SqlCommand("SELECT Enabled FROM dbo.Users WHERE Id = @Id", cn, tx);
+            enabledCmd.Parameters.AddWithValue("@Id", user.Id);
+            var enabled = enabledCmd.ExecuteScalar();
+            user.Enabled = enabled != null && enabled != DBNull.Value && Convert.ToBoolean(enabled);
+        }
+
+        Exec(cn, tx, @"
+IF EXISTS (SELECT 1 FROM dbo.Users WHERE Id = @Id)
+BEGIN
+    UPDATE dbo.Users SET Role=@Role, Name=@Name, Email=@Email, Password=@Password, Enabled=@Enabled WHERE Id=@Id;
+END
+ELSE
+BEGIN
+    INSERT INTO dbo.Users (Id,Role,Name,Email,Password,Enabled) VALUES (@Id,@Role,@Name,@Email,@Password,@Enabled);
+END",
+            ("@Id", user.Id), ("@Role", user.Role), ("@Name", user.Name), ("@Email", user.Email), ("@Password", user.Password), ("@Enabled", user.Enabled));
+
+        Exec(cn, tx, @"
+IF EXISTS (SELECT 1 FROM dbo.Players WHERE Id = @Id)
+BEGIN
+    UPDATE dbo.Players SET UserId=@UserId,FirstName=@FirstName,SecondName=@SecondName,FirstLastName=@FirstLastName,SecondLastName=@SecondLastName,FullName=@FullName,DocumentType=@DocumentType,Document=@Document,BirthDate=@BirthDate,BirthCity=@BirthCity,Sex=@Sex,JoinDate=@JoinDate,City=@City,Phone=@Phone,Address=@Address,Guardian=@Guardian,GuardianPhone=@GuardianPhone,GuardianRelation=@GuardianRelation,Position=@Position,SecondaryPosition=@SecondaryPosition,Number=@Number,Category=@Category,Status=@Status,Height=@Height,Weight=@Weight,DominantHand=@DominantHand,Shirt=@Shirt,Short=@Short,Lycra=@Lycra,Jacket=@Jacket,KneePads=@KneePads,Shoes=@Shoes,Blood=@Blood,Eps=@Eps,Conditions=@Conditions,Allergies=@Allergies,Diseases=@Diseases,Meds=@Meds,Injuries=@Injuries,EmergencyName=@EmergencyName,EmergencyPhone=@EmergencyPhone,EmergencyRelation=@EmergencyRelation,Photo=CASE WHEN @Photo='' THEN Photo ELSE @Photo END,IdentityPdf=CASE WHEN @IdentityPdf='' THEN IdentityPdf ELSE @IdentityPdf END,Notes=@Notes WHERE Id=@Id;
+END
+ELSE
+BEGIN
+    INSERT INTO dbo.Players (Id,UserId,FirstName,SecondName,FirstLastName,SecondLastName,FullName,DocumentType,Document,BirthDate,BirthCity,Sex,JoinDate,City,Phone,Address,Guardian,GuardianPhone,GuardianRelation,Position,SecondaryPosition,Number,Category,Status,Height,Weight,DominantHand,Shirt,Short,Lycra,Jacket,KneePads,Shoes,Blood,Eps,Conditions,Allergies,Diseases,Meds,Injuries,EmergencyName,EmergencyPhone,EmergencyRelation,Photo,IdentityPdf,Notes)
+    VALUES (@Id,@UserId,@FirstName,@SecondName,@FirstLastName,@SecondLastName,@FullName,@DocumentType,@Document,@BirthDate,@BirthCity,@Sex,@JoinDate,@City,@Phone,@Address,@Guardian,@GuardianPhone,@GuardianRelation,@Position,@SecondaryPosition,@Number,@Category,@Status,@Height,@Weight,@DominantHand,@Shirt,@Short,@Lycra,@Jacket,@KneePads,@Shoes,@Blood,@Eps,@Conditions,@Allergies,@Diseases,@Meds,@Injuries,@EmergencyName,@EmergencyPhone,@EmergencyRelation,@Photo,@IdentityPdf,@Notes);
+END",
+            PlayerParams(player));
+
+        tx.Commit();
+    }
+
     public void Mutate(Action<AppDb> change)
     {
         var db = Load();
@@ -168,6 +271,39 @@ public sealed class SqlDataStore : IAppStore
         foreach (var value in values) cmd.Parameters.AddWithValue(value.Name, value.Value ?? DBNull.Value);
         cmd.ExecuteNonQuery();
     }
+
+    private static (string Name, object? Value)[] PlayerParams(Player p) =>
+    [
+        ("@Id", p.Id), ("@UserId", p.UserId), ("@FirstName", p.FirstName), ("@SecondName", p.SecondName), ("@FirstLastName", p.FirstLastName), ("@SecondLastName", p.SecondLastName),
+        ("@FullName", p.FullName), ("@DocumentType", p.DocumentType), ("@Document", p.Document), ("@BirthDate", p.BirthDate), ("@BirthCity", p.BirthCity), ("@Sex", p.Sex), ("@JoinDate", p.JoinDate),
+        ("@City", p.City), ("@Phone", p.Phone), ("@Address", p.Address), ("@Guardian", p.Guardian), ("@GuardianPhone", p.GuardianPhone), ("@GuardianRelation", p.GuardianRelation),
+        ("@Position", p.Position), ("@SecondaryPosition", p.SecondaryPosition), ("@Number", p.Number), ("@Category", p.Category), ("@Status", p.Status), ("@Height", p.Height), ("@Weight", p.Weight), ("@DominantHand", p.DominantHand),
+        ("@Shirt", p.Sizes.Shirt), ("@Short", p.Sizes.Short), ("@Lycra", p.Sizes.Lycra), ("@Jacket", p.Sizes.Jacket), ("@KneePads", p.Sizes.KneePads), ("@Shoes", p.Sizes.Shoes),
+        ("@Blood", p.Health.Blood), ("@Eps", p.Health.Eps), ("@Conditions", p.Health.Conditions), ("@Allergies", p.Health.Allergies), ("@Diseases", p.Health.Diseases), ("@Meds", p.Health.Meds), ("@Injuries", p.Health.Injuries),
+        ("@EmergencyName", p.Emergency.Name), ("@EmergencyPhone", p.Emergency.Phone), ("@EmergencyRelation", p.Emergency.Relation), ("@Photo", p.Photo), ("@IdentityPdf", p.IdentityPdf), ("@Notes", p.Notes)
+    ];
+
+    private static User ReadUser(SqlDataReader rd) => new()
+    {
+        Id = S(rd, "Id"),
+        Role = S(rd, "Role"),
+        Name = S(rd, "Name"),
+        Email = S(rd, "Email"),
+        Password = S(rd, "Password"),
+        Enabled = B(rd, "Enabled")
+    };
+
+    private static Player ReadPlayer(SqlDataReader rd) => new()
+    {
+        Id = S(rd, "Id"), UserId = S(rd, "UserId"), FirstName = S(rd, "FirstName"), SecondName = S(rd, "SecondName"), FirstLastName = S(rd, "FirstLastName"), SecondLastName = S(rd, "SecondLastName"),
+        FullName = S(rd, "FullName"), DocumentType = S(rd, "DocumentType"), Document = S(rd, "Document"), BirthDate = S(rd, "BirthDate"), BirthCity = S(rd, "BirthCity"), Sex = S(rd, "Sex"), JoinDate = S(rd, "JoinDate"),
+        City = S(rd, "City"), Phone = S(rd, "Phone"), Address = S(rd, "Address"), Guardian = S(rd, "Guardian"), GuardianPhone = S(rd, "GuardianPhone"), GuardianRelation = S(rd, "GuardianRelation"),
+        Position = S(rd, "Position"), SecondaryPosition = S(rd, "SecondaryPosition"), Number = S(rd, "Number"), Category = S(rd, "Category"), Status = S(rd, "Status"), Height = S(rd, "Height"), Weight = S(rd, "Weight"), DominantHand = S(rd, "DominantHand"),
+        Photo = S(rd, "Photo"), HasIdentityPdf = B(rd, "HasIdentityPdf"), Notes = S(rd, "Notes"),
+        Sizes = new Sizes { Shirt = S(rd, "Shirt"), Short = S(rd, "Short"), Lycra = S(rd, "Lycra"), Jacket = S(rd, "Jacket"), KneePads = S(rd, "KneePads"), Shoes = S(rd, "Shoes") },
+        Health = new Health { Blood = S(rd, "Blood"), Eps = S(rd, "Eps"), Conditions = S(rd, "Conditions"), Allergies = S(rd, "Allergies"), Diseases = S(rd, "Diseases"), Meds = S(rd, "Meds"), Injuries = S(rd, "Injuries") },
+        Emergency = new Emergency { Name = S(rd, "EmergencyName"), Phone = S(rd, "EmergencyPhone"), Relation = S(rd, "EmergencyRelation") }
+    };
 
     private void EnsureBaselineUsers()
     {
