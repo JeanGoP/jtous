@@ -8,6 +8,7 @@ public sealed class AppDb
     public List<Championship> Championships { get; set; } = [];
     public List<Payment> Payments { get; set; } = [];
     public List<RequestItem> Requests { get; set; } = [];
+    public List<NewsItem> News { get; set; } = [];
 }
 
 public sealed class Club
@@ -31,19 +32,31 @@ public sealed class Player
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string UserId { get; set; } = "";
+    public string FirstName { get; set; } = "";
+    public string SecondName { get; set; } = "";
+    public string FirstLastName { get; set; } = "";
+    public string SecondLastName { get; set; } = "";
     public string FullName { get; set; } = "";
     public string DocumentType { get; set; } = "TI";
     public string Document { get; set; } = "";
     public string BirthDate { get; set; } = "";
+    public string BirthCity { get; set; } = "";
+    public string Sex { get; set; } = "";
+    public string JoinDate { get; set; } = "";
     public string City { get; set; } = "";
     public string Phone { get; set; } = "";
     public string Address { get; set; } = "";
     public string Guardian { get; set; } = "";
     public string GuardianPhone { get; set; } = "";
+    public string GuardianRelation { get; set; } = "";
     public string Position { get; set; } = "";
+    public string SecondaryPosition { get; set; } = "";
     public string Number { get; set; } = "";
     public string Category { get; set; } = "";
     public string Status { get; set; } = "Activa";
+    public string Height { get; set; } = "";
+    public string Weight { get; set; } = "";
+    public string DominantHand { get; set; } = "";
     public Sizes Sizes { get; set; } = new();
     public Health Health { get; set; } = new();
     public Emergency Emergency { get; set; } = new();
@@ -58,6 +71,7 @@ public sealed class Sizes
     public string Short { get; set; } = "";
     public string Lycra { get; set; } = "";
     public string Jacket { get; set; } = "";
+    public string KneePads { get; set; } = "";
     public string Shoes { get; set; } = "";
 }
 
@@ -67,7 +81,9 @@ public sealed class Health
     public string Eps { get; set; } = "";
     public string Conditions { get; set; } = "";
     public string Allergies { get; set; } = "";
+    public string Diseases { get; set; } = "";
     public string Meds { get; set; } = "";
+    public string Injuries { get; set; } = "";
 }
 
 public sealed class Emergency
@@ -125,7 +141,18 @@ public sealed class RequestItem
     public string Note { get; set; } = "";
 }
 
+public sealed class NewsItem
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+    public string Image { get; set; } = "";
+    public string Date { get; set; } = "";
+    public bool Active { get; set; } = true;
+}
+
 public sealed record LoginRequest(string Email, string Password);
 public sealed record LoginResponse(string Token, User User, Player? Player);
 public sealed record PlayerPayload(User User, Player Player);
 public sealed record WalletGenerationRequest(string Month, decimal DefaultAmount, List<string> ExcludedPlayerIds, Dictionary<string, decimal> Overrides);
+public sealed record ChangePasswordRequest(string OldPassword, string NewPassword, string ConfirmPassword);

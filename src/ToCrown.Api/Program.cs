@@ -69,6 +69,30 @@ app.MapGet("/api/me", (HttpRequest request, IAppStore store) =>
     return Results.Ok(new { user, player = db.Players.FirstOrDefault(player => player.UserId == user.Id) });
 });
 
+app.MapPut("/api/auth/change-password", (HttpRequest request, ChangePasswordRequest change, IAppStore store) =>
+{
+    var current = Current(request, store);
+    if (current is null) return Results.Unauthorized();
+    if (string.IsNullOrWhiteSpace(change.NewPassword) || change.NewPassword != change.ConfirmPassword)
+    {
+        return Results.BadRequest("Las claves nuevas no coinciden.");
+    }
+
+    var db = store.Load();
+    var user = db.Users.FirstOrDefault(item => item.Id == current.Id);
+    if (user is null || user.Password != change.OldPassword)
+    {
+        return Results.BadRequest("La clave actual no es correcta.");
+    }
+
+    store.Mutate(saved =>
+    {
+        var savedUser = saved.Users.First(item => item.Id == current.Id);
+        savedUser.Password = change.NewPassword;
+    });
+    return Results.Ok(new { message = "Clave actualizada." });
+});
+
 app.MapGet("/api/admin/snapshot", (HttpRequest request, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
@@ -175,6 +199,15 @@ app.MapPost("/api/requests", (HttpRequest request, RequestItem item, IAppStore s
 
     if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
     store.Mutate(saved => Upsert(saved.Requests, item));
+    return Results.Ok(store.Load());
+});
+
+app.MapPost("/api/admin/news", (HttpRequest request, NewsItem item, IAppStore store) =>
+{
+    if (!IsAdmin(request, store)) return Results.Unauthorized();
+    if (string.IsNullOrWhiteSpace(item.Id)) item.Id = Guid.NewGuid().ToString("N");
+    if (string.IsNullOrWhiteSpace(item.Date)) item.Date = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    store.Mutate(db => Upsert(db.News, item));
     return Results.Ok(store.Load());
 });
 

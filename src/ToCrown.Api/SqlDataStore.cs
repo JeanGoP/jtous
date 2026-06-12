@@ -42,11 +42,13 @@ public sealed class SqlDataStore : IAppStore
             {
                 db.Players.Add(new Player
                 {
-                    Id = S(rd, "Id"), UserId = S(rd, "UserId"), FullName = S(rd, "FullName"), DocumentType = S(rd, "DocumentType"), Document = S(rd, "Document"),
-                    BirthDate = S(rd, "BirthDate"), City = S(rd, "City"), Phone = S(rd, "Phone"), Address = S(rd, "Address"), Guardian = S(rd, "Guardian"), GuardianPhone = S(rd, "GuardianPhone"),
-                    Position = S(rd, "Position"), Number = S(rd, "Number"), Category = S(rd, "Category"), Status = S(rd, "Status"), Photo = S(rd, "Photo"), IdentityPdf = S(rd, "IdentityPdf"), Notes = S(rd, "Notes"),
-                    Sizes = new Sizes { Shirt = S(rd, "Shirt"), Short = S(rd, "Short"), Lycra = S(rd, "Lycra"), Jacket = S(rd, "Jacket"), Shoes = S(rd, "Shoes") },
-                    Health = new Health { Blood = S(rd, "Blood"), Eps = S(rd, "Eps"), Conditions = S(rd, "Conditions"), Allergies = S(rd, "Allergies"), Meds = S(rd, "Meds") },
+                    Id = S(rd, "Id"), UserId = S(rd, "UserId"), FirstName = S(rd, "FirstName"), SecondName = S(rd, "SecondName"), FirstLastName = S(rd, "FirstLastName"), SecondLastName = S(rd, "SecondLastName"),
+                    FullName = S(rd, "FullName"), DocumentType = S(rd, "DocumentType"), Document = S(rd, "Document"), BirthDate = S(rd, "BirthDate"), BirthCity = S(rd, "BirthCity"), Sex = S(rd, "Sex"), JoinDate = S(rd, "JoinDate"),
+                    City = S(rd, "City"), Phone = S(rd, "Phone"), Address = S(rd, "Address"), Guardian = S(rd, "Guardian"), GuardianPhone = S(rd, "GuardianPhone"), GuardianRelation = S(rd, "GuardianRelation"),
+                    Position = S(rd, "Position"), SecondaryPosition = S(rd, "SecondaryPosition"), Number = S(rd, "Number"), Category = S(rd, "Category"), Status = S(rd, "Status"), Height = S(rd, "Height"), Weight = S(rd, "Weight"), DominantHand = S(rd, "DominantHand"),
+                    Photo = S(rd, "Photo"), IdentityPdf = S(rd, "IdentityPdf"), Notes = S(rd, "Notes"),
+                    Sizes = new Sizes { Shirt = S(rd, "Shirt"), Short = S(rd, "Short"), Lycra = S(rd, "Lycra"), Jacket = S(rd, "Jacket"), KneePads = S(rd, "KneePads"), Shoes = S(rd, "Shoes") },
+                    Health = new Health { Blood = S(rd, "Blood"), Eps = S(rd, "Eps"), Conditions = S(rd, "Conditions"), Allergies = S(rd, "Allergies"), Diseases = S(rd, "Diseases"), Meds = S(rd, "Meds"), Injuries = S(rd, "Injuries") },
                     Emergency = new Emergency { Name = S(rd, "EmergencyName"), Phone = S(rd, "EmergencyPhone"), Relation = S(rd, "EmergencyRelation") }
                 });
             }
@@ -97,6 +99,12 @@ public sealed class SqlDataStore : IAppStore
             while (rd.Read()) db.Requests.Add(new RequestItem { Id = S(rd, "Id"), PlayerId = S(rd, "PlayerId"), Type = S(rd, "Type"), Version = S(rd, "Version"), Size = S(rd, "Size"), Date = S(rd, "Date"), Status = S(rd, "Status"), Note = S(rd, "Note") });
         }
 
+        using (var cmd = new SqlCommand("SELECT Id, Title, Body, Image, Date, Active FROM dbo.News ORDER BY Date DESC, CreatedAt DESC", cn))
+        using (var rd = cmd.ExecuteReader())
+        {
+            while (rd.Read()) db.News.Add(new NewsItem { Id = S(rd, "Id"), Title = S(rd, "Title"), Body = S(rd, "Body"), Image = S(rd, "Image"), Date = S(rd, "Date"), Active = B(rd, "Active") });
+        }
+
         return db;
     }
 
@@ -112,7 +120,7 @@ public sealed class SqlDataStore : IAppStore
         using var cn = new SqlConnection(_connectionString);
         cn.Open();
         using var tx = cn.BeginTransaction();
-        Exec(cn, tx, "DELETE FROM dbo.TeamPlayers; DELETE FROM dbo.ChampionshipTeams; DELETE FROM dbo.Requests; DELETE FROM dbo.Payments; DELETE FROM dbo.Players; DELETE FROM dbo.Users; DELETE FROM dbo.Championships; DELETE FROM dbo.Clubs;");
+        Exec(cn, tx, "DELETE FROM dbo.TeamPlayers; DELETE FROM dbo.ChampionshipTeams; DELETE FROM dbo.Requests; DELETE FROM dbo.Payments; DELETE FROM dbo.News; DELETE FROM dbo.Players; DELETE FROM dbo.Users; DELETE FROM dbo.Championships; DELETE FROM dbo.Clubs;");
 
         Exec(cn, tx, "INSERT INTO dbo.Clubs (Name, City, MonthlyFee) VALUES (@Name, @City, @MonthlyFee)",
             ("@Name", db.Club.Name), ("@City", db.Club.City), ("@MonthlyFee", db.Club.MonthlyFee));
@@ -122,9 +130,9 @@ public sealed class SqlDataStore : IAppStore
                 ("@Id", u.Id), ("@Role", u.Role), ("@Name", u.Name), ("@Email", u.Email), ("@Password", u.Password), ("@Enabled", u.Enabled));
 
         foreach (var p in db.Players)
-            Exec(cn, tx, @"INSERT INTO dbo.Players (Id,UserId,FullName,DocumentType,Document,BirthDate,City,Phone,Address,Guardian,GuardianPhone,Position,Number,Category,Status,Shirt,Short,Lycra,Jacket,Shoes,Blood,Eps,Conditions,Allergies,Meds,EmergencyName,EmergencyPhone,EmergencyRelation,Photo,IdentityPdf,Notes)
-                VALUES (@Id,@UserId,@FullName,@DocumentType,@Document,@BirthDate,@City,@Phone,@Address,@Guardian,@GuardianPhone,@Position,@Number,@Category,@Status,@Shirt,@Short,@Lycra,@Jacket,@Shoes,@Blood,@Eps,@Conditions,@Allergies,@Meds,@EmergencyName,@EmergencyPhone,@EmergencyRelation,@Photo,@IdentityPdf,@Notes)",
-                ("@Id", p.Id), ("@UserId", p.UserId), ("@FullName", p.FullName), ("@DocumentType", p.DocumentType), ("@Document", p.Document), ("@BirthDate", p.BirthDate), ("@City", p.City), ("@Phone", p.Phone), ("@Address", p.Address), ("@Guardian", p.Guardian), ("@GuardianPhone", p.GuardianPhone), ("@Position", p.Position), ("@Number", p.Number), ("@Category", p.Category), ("@Status", p.Status), ("@Shirt", p.Sizes.Shirt), ("@Short", p.Sizes.Short), ("@Lycra", p.Sizes.Lycra), ("@Jacket", p.Sizes.Jacket), ("@Shoes", p.Sizes.Shoes), ("@Blood", p.Health.Blood), ("@Eps", p.Health.Eps), ("@Conditions", p.Health.Conditions), ("@Allergies", p.Health.Allergies), ("@Meds", p.Health.Meds), ("@EmergencyName", p.Emergency.Name), ("@EmergencyPhone", p.Emergency.Phone), ("@EmergencyRelation", p.Emergency.Relation), ("@Photo", p.Photo), ("@IdentityPdf", p.IdentityPdf), ("@Notes", p.Notes));
+            Exec(cn, tx, @"INSERT INTO dbo.Players (Id,UserId,FirstName,SecondName,FirstLastName,SecondLastName,FullName,DocumentType,Document,BirthDate,BirthCity,Sex,JoinDate,City,Phone,Address,Guardian,GuardianPhone,GuardianRelation,Position,SecondaryPosition,Number,Category,Status,Height,Weight,DominantHand,Shirt,Short,Lycra,Jacket,KneePads,Shoes,Blood,Eps,Conditions,Allergies,Diseases,Meds,Injuries,EmergencyName,EmergencyPhone,EmergencyRelation,Photo,IdentityPdf,Notes)
+                VALUES (@Id,@UserId,@FirstName,@SecondName,@FirstLastName,@SecondLastName,@FullName,@DocumentType,@Document,@BirthDate,@BirthCity,@Sex,@JoinDate,@City,@Phone,@Address,@Guardian,@GuardianPhone,@GuardianRelation,@Position,@SecondaryPosition,@Number,@Category,@Status,@Height,@Weight,@DominantHand,@Shirt,@Short,@Lycra,@Jacket,@KneePads,@Shoes,@Blood,@Eps,@Conditions,@Allergies,@Diseases,@Meds,@Injuries,@EmergencyName,@EmergencyPhone,@EmergencyRelation,@Photo,@IdentityPdf,@Notes)",
+                ("@Id", p.Id), ("@UserId", p.UserId), ("@FirstName", p.FirstName), ("@SecondName", p.SecondName), ("@FirstLastName", p.FirstLastName), ("@SecondLastName", p.SecondLastName), ("@FullName", p.FullName), ("@DocumentType", p.DocumentType), ("@Document", p.Document), ("@BirthDate", p.BirthDate), ("@BirthCity", p.BirthCity), ("@Sex", p.Sex), ("@JoinDate", p.JoinDate), ("@City", p.City), ("@Phone", p.Phone), ("@Address", p.Address), ("@Guardian", p.Guardian), ("@GuardianPhone", p.GuardianPhone), ("@GuardianRelation", p.GuardianRelation), ("@Position", p.Position), ("@SecondaryPosition", p.SecondaryPosition), ("@Number", p.Number), ("@Category", p.Category), ("@Status", p.Status), ("@Height", p.Height), ("@Weight", p.Weight), ("@DominantHand", p.DominantHand), ("@Shirt", p.Sizes.Shirt), ("@Short", p.Sizes.Short), ("@Lycra", p.Sizes.Lycra), ("@Jacket", p.Sizes.Jacket), ("@KneePads", p.Sizes.KneePads), ("@Shoes", p.Sizes.Shoes), ("@Blood", p.Health.Blood), ("@Eps", p.Health.Eps), ("@Conditions", p.Health.Conditions), ("@Allergies", p.Health.Allergies), ("@Diseases", p.Health.Diseases), ("@Meds", p.Health.Meds), ("@Injuries", p.Health.Injuries), ("@EmergencyName", p.Emergency.Name), ("@EmergencyPhone", p.Emergency.Phone), ("@EmergencyRelation", p.Emergency.Relation), ("@Photo", p.Photo), ("@IdentityPdf", p.IdentityPdf), ("@Notes", p.Notes));
 
         foreach (var c in db.Championships)
         {
@@ -145,6 +153,10 @@ public sealed class SqlDataStore : IAppStore
         foreach (var r in db.Requests)
             Exec(cn, tx, "INSERT INTO dbo.Requests (Id,PlayerId,Type,Version,Size,Date,Status,Note) VALUES (@Id,@PlayerId,@Type,@Version,@Size,@Date,@Status,@Note)",
                 ("@Id", r.Id), ("@PlayerId", r.PlayerId), ("@Type", r.Type), ("@Version", r.Version), ("@Size", r.Size), ("@Date", r.Date), ("@Status", r.Status), ("@Note", r.Note));
+
+        foreach (var n in db.News)
+            Exec(cn, tx, "INSERT INTO dbo.News (Id,Title,Body,Image,Date,Active) VALUES (@Id,@Title,@Body,@Image,@Date,@Active)",
+                ("@Id", n.Id), ("@Title", n.Title), ("@Body", n.Body), ("@Image", n.Image), ("@Date", n.Date), ("@Active", n.Active));
 
         tx.Commit();
     }

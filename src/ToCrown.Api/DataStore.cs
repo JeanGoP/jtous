@@ -140,6 +140,10 @@ public sealed class DataStore : IAppStore
             Requests =
             [
                 new RequestItem { PlayerId = p1, Type = "Uniforme", Version = "Local verde 2026", Size = "M", Date = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd"), Status = "Solicitada", Note = "Incluir pantaloneta" }
+            ],
+            News =
+            [
+                new NewsItem { Title = "Bienvenidas a ToCrown", Body = "Gestion deportiva, campeonatos y logros del club en un solo lugar.", Date = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd"), Active = true }
             ]
         };
     }
