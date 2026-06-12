@@ -5,3 +5,6 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
+    envVars:
+      - key: SQLSERVER_CONNECTION_STRING
+        sync: false

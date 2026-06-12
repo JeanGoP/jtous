@@ -4,13 +4,14 @@ using ToCrown.Api;
 var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var sqlConnection =
+    builder.Configuration.GetConnectionString("ToCrownDb") ??
+    Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING");
+var storageMode = string.IsNullOrWhiteSpace(sqlConnection) ? "json" : "sqlserver";
 builder.Services.AddSingleton<IAppStore>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    var sqlConnection =
-        configuration.GetConnectionString("ToCrownDb") ??
-        Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING");
-    return string.IsNullOrWhiteSpace(sqlConnection)
+    return storageMode == "json"
         ? sp.GetRequiredService<DataStore>()
         : new SqlDataStore(configuration);
 });
@@ -18,6 +19,7 @@ builder.Services.AddSingleton<DataStore>();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin()));
 
 var app = builder.Build();
+app.Logger.LogInformation("ToCrown storage mode: {StorageMode}", storageMode);
 var tokens = new ConcurrentDictionary<string, string>();
 
 app.UseCors();
@@ -31,6 +33,8 @@ app.UseStaticFiles(new StaticFileOptions
         context.Context.Response.Headers.Expires = "0";
     }
 });
+
+app.MapGet("/api/health/storage", () => Results.Ok(new { storage = storageMode }));
 
 User? Current(HttpRequest request, IAppStore store)
 {
