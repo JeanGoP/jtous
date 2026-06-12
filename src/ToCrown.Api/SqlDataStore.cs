@@ -12,6 +12,7 @@ public sealed class SqlDataStore : IAppStore
             configuration.GetConnectionString("ToCrownDb") ??
             Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING") ??
             throw new InvalidOperationException("No SQL Server connection string configured.");
+        EnsureBaselineUsers();
     }
 
     public AppDb Load()
@@ -165,6 +166,38 @@ public sealed class SqlDataStore : IAppStore
     {
         using var cmd = new SqlCommand(sql, cn, tx);
         foreach (var value in values) cmd.Parameters.AddWithValue(value.Name, value.Value ?? DBNull.Value);
+        cmd.ExecuteNonQuery();
+    }
+
+    private void EnsureBaselineUsers()
+    {
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        EnsureUser(cn, "superadmin@tocrown.com", "superadmin", "Super Administrador");
+        EnsureUser(cn, "admin@tocrown.com", "admin", "Administrador ToCrown");
+    }
+
+    private static void EnsureUser(SqlConnection cn, string email, string role, string name)
+    {
+        using var cmd = new SqlCommand(@"
+IF EXISTS (SELECT 1 FROM dbo.Users WHERE Email = @Email)
+BEGIN
+    UPDATE dbo.Users
+    SET Role = @Role,
+        Name = @Name,
+        Password = @Password,
+        Enabled = 1
+    WHERE Email = @Email;
+END
+ELSE
+BEGIN
+    INSERT INTO dbo.Users (Id, Role, Name, Email, Password, Enabled)
+    VALUES (REPLACE(CONVERT(NVARCHAR(36), NEWID()), '-', ''), @Role, @Name, @Email, @Password, 1);
+END", cn);
+        cmd.Parameters.AddWithValue("@Email", email);
+        cmd.Parameters.AddWithValue("@Role", role);
+        cmd.Parameters.AddWithValue("@Name", name);
+        cmd.Parameters.AddWithValue("@Password", "qwerty12345");
         cmd.ExecuteNonQuery();
     }
 

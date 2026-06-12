@@ -48,10 +48,13 @@ bool IsAdmin(HttpRequest request, IAppStore store)
 app.MapPost("/api/auth/login", (LoginRequest login, IAppStore store) =>
 {
     var db = store.Load();
+    var identifier = login.Email.Trim();
+    var password = login.Password.Trim();
     var user = db.Users.FirstOrDefault(item =>
-        item.Email.Equals(login.Email.Trim(), StringComparison.OrdinalIgnoreCase) &&
-        item.Password == login.Password &&
-        item.Enabled);
+        item.Password == password &&
+        item.Enabled &&
+        (item.Email.Equals(identifier, StringComparison.OrdinalIgnoreCase) ||
+         db.Players.Any(player => player.UserId == item.Id && player.Document.Equals(identifier, StringComparison.OrdinalIgnoreCase))));
 
     if (user is null) return Results.Unauthorized();
 
