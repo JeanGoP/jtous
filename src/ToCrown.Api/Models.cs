@@ -61,6 +61,7 @@ public sealed class Player
     public Health Health { get; set; } = new();
     public Emergency Emergency { get; set; } = new();
     public string Photo { get; set; } = "";
+    public bool HasPhoto { get; set; }
     public string IdentityPdf { get; set; } = "";
     public bool HasIdentityPdf { get; set; }
     public string Notes { get; set; } = "";

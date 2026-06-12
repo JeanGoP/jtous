@@ -167,12 +167,25 @@ app.MapGet("/api/players/{id}/identity-pdf", (HttpRequest request, string id, IA
     return Results.Ok(new { identityPdf = pdf });
 });
 
+app.MapGet("/api/players/{id}/photo", (HttpRequest request, string id, IAppStore store) =>
+{
+    var user = Current(request, store);
+    if (user is null) return Results.Unauthorized();
+    var db = store.Load();
+    var player = db.Players.FirstOrDefault(item => item.Id == id);
+    if (player is null) return Results.NotFound();
+    if (user.Role == "player" && player.UserId != user.Id) return Results.Unauthorized();
+    var photo = store is SqlDataStore sqlStore ? sqlStore.GetPhoto(id) : player.Photo;
+    return Results.Ok(new { photo });
+});
+
 app.MapPost("/api/admin/championships", (HttpRequest request, Championship championship, IAppStore store) =>
 {
     if (!IsAdmin(request, store)) return Results.Unauthorized();
     if (string.IsNullOrWhiteSpace(championship.Id)) championship.Id = Guid.NewGuid().ToString("N");
     foreach (var team in championship.Teams.Where(team => string.IsNullOrWhiteSpace(team.Id))) team.Id = Guid.NewGuid().ToString("N");
-    store.Mutate(db => Upsert(db.Championships, championship));
+    if (store is SqlDataStore sqlStore) sqlStore.UpsertChampionship(championship);
+    else store.Mutate(db => Upsert(db.Championships, championship));
     return Results.Ok(store.Load());
 });
 

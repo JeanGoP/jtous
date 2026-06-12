@@ -3,6 +3,7 @@ const App = {
   route: "dashboard",
   champFilters: { city: "", org: "", from: "", to: "" },
   filterTimer: null,
+  photoCache: {},
 
   async init() {
     if (!Api.token || !Api.user) return this.loginView();
@@ -47,8 +48,8 @@ const App = {
           <h1>ToCrown</h1>
           <p class="subtitle">Club Deportivo de Voleibol</p>
           <div id="loginMsg"></div>
-          <div class="form-group"><label>Usuario</label><input class="form-control" name="email" type="text" placeholder="admin@tocrown.com o documento" required></div>
-          <div class="form-group"><label>Contrasena</label><input class="form-control" name="password" type="password" placeholder="qwerty12345" required></div>
+          <div class="form-group"><label>Usuario</label><input class="form-control" name="email" type="text" required></div>
+          <div class="form-group"><label>Contrasena</label><input class="form-control" name="password" type="password" required></div>
           <button class="btn-primary" type="submit">Ingresar al Sistema</button>
         </form>
       </main>`;
@@ -173,7 +174,7 @@ const App = {
       const user = this.userByPlayer(p.id);
       return `<div class="card player-card id-card" onclick="App.openPlayerInfo('${p.id}')">
         <div class="id-card-band"></div>
-        <div class="id-card-photo"><img src="${this.playerPhoto(p)}" alt="${this.esc(p.fullName)}"></div>
+        <div class="id-card-photo"><img data-photo-id="${p.id}" src="${this.playerPhoto(p)}" alt="${this.esc(p.fullName)}"></div>
         <div class="info">
           <h3>${this.esc(p.fullName)}</h3>
           <p class="muted">${this.esc(p.position)} - #${this.esc(p.number)} - ${this.age(p.birthDate)} anos</p>
@@ -186,6 +187,7 @@ const App = {
         </div>
       </div>`;
     }).join("")}<div class="card player-card" style="display:flex;align-items:center;justify-content:center;min-height:260px;border:2px dashed var(--gray-200);cursor:pointer" onclick="App.openPlayer()"><b>+ Agregar jugadora</b></div></div>`);
+    this.hydratePlayerPhotos(filtered);
   },
 
   championships() {
@@ -372,7 +374,7 @@ const App = {
     if (!p) return;
     this.modal("Informacion de jugadora", `
       <div class="player-info-modal">
-        <div class="player-info-photo"><img src="${this.playerPhoto(p)}" alt="${this.esc(p.fullName)}"></div>
+        <div class="player-info-photo"><img data-photo-id="${p.id}" src="${this.playerPhoto(p)}" alt="${this.esc(p.fullName)}"></div>
         <div>
           <h2>${this.esc(p.fullName)}</h2>
           <p class="muted">${this.esc(p.documentType)} ${this.esc(p.document)} - ${this.esc(p.position)} - #${this.esc(p.number)}</p>
@@ -388,6 +390,7 @@ const App = {
         </div>
       </div>`,
       `<button class="btn-sm outline" onclick="App.closeModal()">Cerrar</button><button class="btn-sm gold" onclick="App.closeModal();App.openPlayer('${p.id}')">Editar</button>`);
+    this.hydratePlayerPhotos([p]);
   },
 
   openPlayer(id = "") {
@@ -432,10 +435,10 @@ const App = {
 
                 <div class="form-section-title">Tallas de Uniforme</div>
                 <div class="form-grid-3">
-                  ${this.select("shirt","Talla Camiseta*",p.sizes.shirt,["","XS","S","M","L","XL"],true)}
-                  ${this.select("lycra","Talla Licra*",p.sizes.lycra,["","XS","S","M","L","XL"],true)}
-                  ${this.select("short","Talla Pantaloneta*",p.sizes.short,["","XS","S","M","L","XL"],true)}
-                  ${this.select("kneePads","Talla Rodilleras*",p.sizes.kneePads,["","XS","S","M","L","XL"],true)}
+                  ${this.select("shirt","Talla Camiseta*",p.sizes.shirt,this.uniformSizes(),true)}
+                  ${this.select("lycra","Talla Licra*",p.sizes.lycra,this.uniformSizes(),true)}
+                  ${this.select("short","Talla Pantaloneta*",p.sizes.short,this.uniformSizes(),true)}
+                  ${this.select("kneePads","Talla Rodilleras*",p.sizes.kneePads,this.uniformSizes(),true)}
                   ${this.input("shoes","Talla Calzado*",p.sizes.shoes,true)}
                 </div>
               </div>
@@ -736,8 +739,27 @@ const App = {
   hasPdf(player) {
     return Boolean(player?.identityPdf || player?.hasIdentityPdf);
   },
+  hasPhoto(player) {
+    return Boolean(player?.photo || player?.hasPhoto);
+  },
   playerPhoto(player) {
-    return player?.photo || this.animePlaceholder();
+    return this.photoCache[player?.id] || player?.photo || this.animePlaceholder();
+  },
+  async hydratePlayerPhotos(players = []) {
+    const targets = players.filter(player => player?.id && this.hasPhoto(player) && !this.photoCache[player.id] && !player.photo);
+    for (const player of targets) {
+      try {
+        const data = await Api.request(`/api/players/${player.id}/photo`);
+        if (!data.photo) continue;
+        this.photoCache[player.id] = data.photo;
+        document.querySelectorAll(`img[data-photo-id="${player.id}"]`).forEach(img => img.src = data.photo);
+      } catch {
+        // The placeholder remains if the photo cannot be loaded.
+      }
+    }
+  },
+  uniformSizes() {
+    return ["", "10", "12", "14", "16", "XS", "S", "M", "L", "XL"];
   },
   playerChampCount(playerId) {
     return this.db.championships.filter(c => c.teams.some(t => t.players.includes(playerId))).length;

@@ -37,7 +37,8 @@ public sealed class SqlDataStore : IAppStore
         }
 
         using (var cmd = new SqlCommand(@"SELECT Id,UserId,FirstName,SecondName,FirstLastName,SecondLastName,FullName,DocumentType,Document,BirthDate,BirthCity,Sex,JoinDate,City,Phone,Address,Guardian,GuardianPhone,GuardianRelation,Position,SecondaryPosition,Number,Category,Status,Height,Weight,DominantHand,
-            CASE WHEN DATALENGTH(Photo) <= 350000 THEN Photo ELSE '' END AS Photo,
+            '' AS Photo,
+            CAST(CASE WHEN DATALENGTH(Photo) > 0 THEN 1 ELSE 0 END AS bit) AS HasPhoto,
             CAST(CASE WHEN DATALENGTH(IdentityPdf) > 0 THEN 1 ELSE 0 END AS bit) AS HasIdentityPdf,
             Notes,Shirt,Short,Lycra,Jacket,KneePads,Shoes,Blood,Eps,Conditions,Allergies,Diseases,Meds,Injuries,EmergencyName,EmergencyPhone,EmergencyRelation
             FROM dbo.Players ORDER BY FullName", cn))
@@ -51,7 +52,7 @@ public sealed class SqlDataStore : IAppStore
                     FullName = S(rd, "FullName"), DocumentType = S(rd, "DocumentType"), Document = S(rd, "Document"), BirthDate = S(rd, "BirthDate"), BirthCity = S(rd, "BirthCity"), Sex = S(rd, "Sex"), JoinDate = S(rd, "JoinDate"),
                     City = S(rd, "City"), Phone = S(rd, "Phone"), Address = S(rd, "Address"), Guardian = S(rd, "Guardian"), GuardianPhone = S(rd, "GuardianPhone"), GuardianRelation = S(rd, "GuardianRelation"),
                     Position = S(rd, "Position"), SecondaryPosition = S(rd, "SecondaryPosition"), Number = S(rd, "Number"), Category = S(rd, "Category"), Status = S(rd, "Status"), Height = S(rd, "Height"), Weight = S(rd, "Weight"), DominantHand = S(rd, "DominantHand"),
-                    Photo = S(rd, "Photo"), HasIdentityPdf = B(rd, "HasIdentityPdf"), Notes = S(rd, "Notes"),
+                    Photo = S(rd, "Photo"), HasPhoto = B(rd, "HasPhoto"), HasIdentityPdf = B(rd, "HasIdentityPdf"), Notes = S(rd, "Notes"),
                     Sizes = new Sizes { Shirt = S(rd, "Shirt"), Short = S(rd, "Short"), Lycra = S(rd, "Lycra"), Jacket = S(rd, "Jacket"), KneePads = S(rd, "KneePads"), Shoes = S(rd, "Shoes") },
                     Health = new Health { Blood = S(rd, "Blood"), Eps = S(rd, "Eps"), Conditions = S(rd, "Conditions"), Allergies = S(rd, "Allergies"), Diseases = S(rd, "Diseases"), Meds = S(rd, "Meds"), Injuries = S(rd, "Injuries") },
                     Emergency = new Emergency { Name = S(rd, "EmergencyName"), Phone = S(rd, "EmergencyPhone"), Relation = S(rd, "EmergencyRelation") }
@@ -146,7 +147,8 @@ WHERE u.Enabled = 1
         cn.Open();
         using var cmd = new SqlCommand(@"
 SELECT TOP 1 Id,UserId,FirstName,SecondName,FirstLastName,SecondLastName,FullName,DocumentType,Document,BirthDate,BirthCity,Sex,JoinDate,City,Phone,Address,Guardian,GuardianPhone,GuardianRelation,Position,SecondaryPosition,Number,Category,Status,Height,Weight,DominantHand,
-    CASE WHEN DATALENGTH(Photo) <= 350000 THEN Photo ELSE '' END AS Photo,
+    '' AS Photo,
+    CAST(CASE WHEN DATALENGTH(Photo) > 0 THEN 1 ELSE 0 END AS bit) AS HasPhoto,
     CAST(CASE WHEN DATALENGTH(IdentityPdf) > 0 THEN 1 ELSE 0 END AS bit) AS HasIdentityPdf,
     Notes,Shirt,Short,Lycra,Jacket,KneePads,Shoes,Blood,Eps,Conditions,Allergies,Diseases,Meds,Injuries,EmergencyName,EmergencyPhone,EmergencyRelation
 FROM dbo.Players WHERE UserId = @UserId", cn);
@@ -162,6 +164,55 @@ FROM dbo.Players WHERE UserId = @UserId", cn);
         using var cmd = new SqlCommand("SELECT IdentityPdf FROM dbo.Players WHERE Id = @Id", cn);
         cmd.Parameters.AddWithValue("@Id", playerId);
         return Convert.ToString(cmd.ExecuteScalar()) ?? "";
+    }
+
+    public string GetPhoto(string playerId)
+    {
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var cmd = new SqlCommand("SELECT Photo FROM dbo.Players WHERE Id = @Id", cn);
+        cmd.Parameters.AddWithValue("@Id", playerId);
+        return Convert.ToString(cmd.ExecuteScalar()) ?? "";
+    }
+
+    public void UpsertChampionship(Championship championship)
+    {
+        if (string.IsNullOrWhiteSpace(championship.Id)) championship.Id = Guid.NewGuid().ToString("N");
+        foreach (var team in championship.Teams.Where(team => string.IsNullOrWhiteSpace(team.Id))) team.Id = Guid.NewGuid().ToString("N");
+
+        using var cn = new SqlConnection(_connectionString);
+        cn.Open();
+        using var tx = cn.BeginTransaction();
+
+        Exec(cn, tx, @"
+IF EXISTS (SELECT 1 FROM dbo.Championships WHERE Id = @Id)
+BEGIN
+    UPDATE dbo.Championships
+    SET Name=@Name, City=@City, Place=@Place, Organizer=@Organizer, StartDate=@StartDate, EndDate=@EndDate, Category=@Category, Status=@Status, TitleWon=@TitleWon, Notes=@Notes
+    WHERE Id=@Id;
+END
+ELSE
+BEGIN
+    INSERT INTO dbo.Championships (Id,Name,City,Place,Organizer,StartDate,EndDate,Category,Status,TitleWon,Notes)
+    VALUES (@Id,@Name,@City,@Place,@Organizer,@StartDate,@EndDate,@Category,@Status,@TitleWon,@Notes);
+END",
+            ("@Id", championship.Id), ("@Name", championship.Name), ("@City", championship.City), ("@Place", championship.Place), ("@Organizer", championship.Organizer),
+            ("@StartDate", championship.StartDate), ("@EndDate", championship.EndDate), ("@Category", championship.Category), ("@Status", championship.Status), ("@TitleWon", championship.TitleWon), ("@Notes", championship.Notes));
+
+        Exec(cn, tx, "DELETE tp FROM dbo.TeamPlayers tp INNER JOIN dbo.ChampionshipTeams ct ON ct.Id = tp.TeamId WHERE ct.ChampionshipId = @ChampionshipId; DELETE FROM dbo.ChampionshipTeams WHERE ChampionshipId = @ChampionshipId;",
+            ("@ChampionshipId", championship.Id));
+
+        foreach (var team in championship.Teams)
+        {
+            Exec(cn, tx, "INSERT INTO dbo.ChampionshipTeams (Id, ChampionshipId, Name) VALUES (@Id,@ChampionshipId,@Name)",
+                ("@Id", team.Id), ("@ChampionshipId", championship.Id), ("@Name", team.Name));
+            foreach (var playerId in team.Players.Distinct())
+            {
+                Exec(cn, tx, "INSERT INTO dbo.TeamPlayers (TeamId, PlayerId) VALUES (@TeamId,@PlayerId)", ("@TeamId", team.Id), ("@PlayerId", playerId));
+            }
+        }
+
+        tx.Commit();
     }
 
     public void UpsertPlayerPayload(PlayerPayload payload, bool allowAccessChange)
@@ -299,7 +350,7 @@ END",
         FullName = S(rd, "FullName"), DocumentType = S(rd, "DocumentType"), Document = S(rd, "Document"), BirthDate = S(rd, "BirthDate"), BirthCity = S(rd, "BirthCity"), Sex = S(rd, "Sex"), JoinDate = S(rd, "JoinDate"),
         City = S(rd, "City"), Phone = S(rd, "Phone"), Address = S(rd, "Address"), Guardian = S(rd, "Guardian"), GuardianPhone = S(rd, "GuardianPhone"), GuardianRelation = S(rd, "GuardianRelation"),
         Position = S(rd, "Position"), SecondaryPosition = S(rd, "SecondaryPosition"), Number = S(rd, "Number"), Category = S(rd, "Category"), Status = S(rd, "Status"), Height = S(rd, "Height"), Weight = S(rd, "Weight"), DominantHand = S(rd, "DominantHand"),
-        Photo = S(rd, "Photo"), HasIdentityPdf = B(rd, "HasIdentityPdf"), Notes = S(rd, "Notes"),
+        Photo = S(rd, "Photo"), HasPhoto = B(rd, "HasPhoto"), HasIdentityPdf = B(rd, "HasIdentityPdf"), Notes = S(rd, "Notes"),
         Sizes = new Sizes { Shirt = S(rd, "Shirt"), Short = S(rd, "Short"), Lycra = S(rd, "Lycra"), Jacket = S(rd, "Jacket"), KneePads = S(rd, "KneePads"), Shoes = S(rd, "Shoes") },
         Health = new Health { Blood = S(rd, "Blood"), Eps = S(rd, "Eps"), Conditions = S(rd, "Conditions"), Allergies = S(rd, "Allergies"), Diseases = S(rd, "Diseases"), Meds = S(rd, "Meds"), Injuries = S(rd, "Injuries") },
         Emergency = new Emergency { Name = S(rd, "EmergencyName"), Phone = S(rd, "EmergencyPhone"), Relation = S(rd, "EmergencyRelation") }
