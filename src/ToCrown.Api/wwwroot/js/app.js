@@ -4,6 +4,7 @@ const App = {
   champFilters: { city: "", org: "", from: "", to: "" },
   filterTimer: null,
   photoCache: {},
+  pdfLoading: {},
 
   async init() {
     if (!Api.token || !Api.user) return this.loginView();
@@ -82,8 +83,9 @@ const App = {
           <nav class="sidebar-nav"><div class="nav-section-title">${admin ? "Principal" : "Mi cuenta"}</div>${nav.map(([r,l]) => `<button class="nav-item" data-route="${r}">${l}</button>`).join("")}</nav>
           <div class="sidebar-bottom"><button class="btn-logout" onclick="App.logout()">Cerrar Sesion</button></div>
         </aside>
+        <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="App.closeSidebar()"></div>
         <div class="topbar">
-          <div style="display:flex;align-items:center;gap:10px"><button class="btn-sm outline mobile-menu" onclick="sidebar.classList.toggle('open')">Menu</button><div class="topbar-title" id="title"></div></div>
+          <div style="display:flex;align-items:center;gap:10px"><button class="btn-sm outline mobile-menu" onclick="App.toggleSidebar()">Menu</button><div class="topbar-title" id="title"></div></div>
           <div class="topbar-right">
             <div class="topbar-actions" id="actions"></div>
             <div class="dropdown">
@@ -99,8 +101,16 @@ const App = {
         </div>
         <main class="main-content"><div class="page-body" id="view"></div></main>
       </div>`;
-    document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => this.go(btn.dataset.route));
+    document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => { this.closeSidebar(); this.go(btn.dataset.route); });
     this.go(this.route);
+  },
+  toggleSidebar() {
+    document.getElementById("sidebar")?.classList.toggle("open");
+    document.getElementById("sidebarBackdrop")?.classList.toggle("open");
+  },
+  closeSidebar() {
+    document.getElementById("sidebar")?.classList.remove("open");
+    document.getElementById("sidebarBackdrop")?.classList.remove("open");
   },
 
   async refresh() {
@@ -729,12 +739,22 @@ const App = {
     reader.readAsDataURL(file);
   },
   async viewPdf(playerId, returnToPlayer = false) {
+    if (this.pdfLoading[playerId]) return;
     const collection = this.db.players || (this.db.player ? [this.db.player] : []);
     const player = collection.find(p => p.id === playerId) || this.db.player;
     if (!this.hasPdf(player)) return alert("Esta jugadora no tiene PDF cargado.");
-    const data = player.identityPdf ? { identityPdf: player.identityPdf } : await Api.request(`/api/players/${playerId}/identity-pdf`);
-    if (!data.identityPdf) return alert("Esta jugadora no tiene PDF cargado.");
-    this.modal("Tarjeta de identidad", `<iframe class="pdf-viewer" src="${data.identityPdf}"></iframe>`, `<button class="btn-sm outline" onclick="${returnToPlayer ? `App.openPlayerInfo('${player.id}')` : "App.closeModal()"}">Cerrar</button>`);
+    this.pdfLoading[playerId] = true;
+    this.modal("Tarjeta de identidad", `<div class="loading-state"><div class="spinner"></div><strong>Cargando PDF...</strong><span>Espera un momento, el documento se esta preparando.</span></div>`, `<button class="btn-sm outline" disabled>Cargando</button>`);
+    try {
+      const data = player.identityPdf ? { identityPdf: player.identityPdf } : await Api.request(`/api/players/${playerId}/identity-pdf`);
+      if (!data.identityPdf) {
+        alert("Esta jugadora no tiene PDF cargado.");
+        return returnToPlayer ? this.openPlayerInfo(player.id) : this.closeModal();
+      }
+      this.modal("Tarjeta de identidad", `<iframe class="pdf-viewer" src="${data.identityPdf}"></iframe>`, `<button class="btn-sm outline" onclick="${returnToPlayer ? `App.openPlayerInfo('${player.id}')` : "App.closeModal()"}">Cerrar</button>`);
+    } finally {
+      delete this.pdfLoading[playerId];
+    }
   },
   hasPdf(player) {
     return Boolean(player?.identityPdf || player?.hasIdentityPdf);
